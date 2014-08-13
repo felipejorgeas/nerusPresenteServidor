@@ -42,6 +42,7 @@ class Log {
   function closeLog(){
     fclose($this->log);
     $this->log = null;
+    exec("chmod 777 " . $this->log);    
   }
 
   function addLog($type, $method, $info, $sep=false){
