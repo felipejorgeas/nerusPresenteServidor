@@ -1,0 +1,22 @@
+;<?php die(); /* DO NOT REMOVE THIS LINE! SERIOUS SECURITY RISK IF REMOVED! */ ?>
+
+[SISTEMA]
+saciWS  = http://localhost/saciWS
+urlImgs = http://localhost/imgsProdutos
+dirImgs = /var/www/imgsProdutos
+diretorio_crypts = /v/saci/config
+dirLog = log
+
+[MISC]
+loja = 1
+pdv  = 1
+lojaComGrade = 1,2,3
+lojaSemGrade = 4,5,6
+gradeEncomend = ENCOMEND
+
+[EMPRESA]
+nome  = 'Empresa Teste'
+frase = 'A melhor solução'
+email = 'email@email.com.br'
+site  = 'www.site.com.br'
+tel   = '(xx) XXXX XXXX / (xx) XXXX XXXX'

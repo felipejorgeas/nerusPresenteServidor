@@ -1,0 +1,10 @@
+## SACI Presente - servidor
+#
+# Aplicativo auxiliar na criação de lista de presentes e orçamentos no ERP SACI.
+#
+## Autor: Felipe Jorge - EAC Software
+
+
+# v0.1 - 12/08/2014
+
+- Versão inicial do aplicativo.
