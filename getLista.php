@@ -40,7 +40,18 @@ $client->useHTTPPersistentConnection();
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
 
-$dados = sprintf("<lista>\n\t<data_evento>%s</data_evento>\n<tipo>%s</tipo>\n</lista>", $lista["data_evento"], $lista["tipo"]);
+$dados = "<lista>";
+
+foreach ($lista as $key => $value) {
+
+    if ($value != "") {
+        $dados .= sprintf("<%s>%s</%s>\n", $key, $value, $key);
+    } else {
+        $dados .= sprintf("<%s/>\n", $key);
+    }
+}
+
+$dados .= "</lista>";
 
 // grava log
 $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
@@ -62,37 +73,35 @@ $res = XML2Array::createArray($result);
 
 if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
 
-  $listas = array();
+    $listas = array();
 
-  if(key_exists("0", $res["resultado"]["dados"]["lista"]))
-    $listas = $res["resultado"]["dados"]["lista"];
-  else
-    $listas[] = $res["resultado"]["dados"]["lista"];
+    if (key_exists("0", $res["resultado"]["dados"]["lista"]))
+        $listas = $res["resultado"]["dados"]["lista"];
+    else
+        $listas[] = $res["resultado"]["dados"]["lista"];
 
-  $wsstatus = 1;
-  $wsresult = array();
+    $wsstatus = 1;
+    $wsresult = array();
 
-  foreach($listas as $lista){
-    /* dados do produto */
-    $wsresult[] = array(
-        "cliente_codigo" => $lista["codigo_cliente"],
-        "cliente_name" => $lista["name_cliente"],
-        "tipo_codigo" => $lista["tipo"],
-        "tipo_name" => $lista["tipo_name"],
-        "data_evento" => $lista["data_evento"]
-    );
-  }
-}
+    foreach ($listas as $lista) {
+        /* dados do produto */
+        $wsresult[] = array(
+            "cliente_codigo" => $lista["codigo_cliente"],
+            "cliente_name" => $lista["name_cliente"],
+            "tipo_codigo" => $lista["tipo"],
+            "tipo_name" => $lista["tipo_name"],
+            "data_evento" => $lista["data_evento"]
+        );
+    }
+} else {
+    /* monta o xml de retorno */
+    $wsstatus = 0;
+    $wsresult["wserror"] = "Nenhuma lista encontrada!";
 
-else{
-  /* monta o xml de retorno */
-  $wsstatus = 0;
-  $wsresult["wserror"] = "Nenhuma lista encontrada!";
+    // grava log
+    $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
 
-  // grava log
-  $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
-
-  returnWS($wscallback, $wsstatus, $wsresult);
+    returnWS($wscallback, $wsstatus, $wsresult);
 }
 
 // grava log
