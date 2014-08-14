@@ -44,7 +44,7 @@ $dados = "<lista>";
 
 foreach ($lista as $key => $value) {
 
-    if ($value != "") {
+    if (!empty($value) || is_numeric($value)) {
         $dados .= sprintf("<%s>%s</%s>\n", $key, $value, $key);
     } else {
         $dados .= sprintf("<%s/>\n", $key);
