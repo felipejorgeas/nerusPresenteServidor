@@ -54,6 +54,9 @@ $params = array(
 // realiza a chamada de um metodo do ws passando os paramentros
 $result = $client->call("listar", $params);
 
+// remove acentos dos dados
+$result = removerAcentos($result);
+
 // grava log
 $log->addLog(ACAO_RETORNO, "dadosLista", $result);
 
@@ -64,7 +67,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) 
 
   $listas = array();
 
-  if(key_exists("0", $res["resultado"]["dados"]["lista"]))
+  if (key_exists("0", $res["resultado"]["dados"]["lista"]))
     $listas = $res["resultado"]["dados"]["lista"];
   else
     $listas[] = $res["resultado"]["dados"]["lista"];
@@ -72,7 +75,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) 
   $wsstatus = 1;
   $wsresult = array();
 
-  foreach($listas as $lista){
+  foreach ($listas as $lista) {
     /* dados do produto */
     $wsresult[] = array(
         "cliente_codigo" => $lista["codigo_cliente"],
@@ -82,9 +85,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) 
         "data_evento" => $lista["data_evento"]
     );
   }
-}
-
-else{
+} else {
   /* monta o xml de retorno */
   $wsstatus = 0;
   $wsresult["wserror"] = "Nenhuma lista encontrada!";
