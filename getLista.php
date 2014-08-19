@@ -95,7 +95,19 @@ if (empty($lista['nome_cliente'])) {
                 "cliente_nome" => $lista["name_cliente"],
                 "tipo_codigo" => $lista["tipo"],
                 "tipo_nome" => $lista["tipo_name"],
-                "data_evento" => $lista["data_evento"]
+                "data_evento" => $lista["data_evento"],
+                "noivo_nome" => $lista['nome_noivo'],
+                "noivo_pai" => $lista['pai_noivo'],
+                "noivo_mae" => $lista['mae_noivo'],
+                "noivo_cep" => $lista['cep_noivo'],
+                "noivo_telefone" => $lista['telefone_noivo'],
+                "noivo_endereco" => $lista['endereco_noivo'],
+                "noivo_bairro" => $lista['bairro_noivo'],
+                "noivo_cidade" => $lista['cidade_noivo'],
+                "noivo_estado" => $lista['estado_noivo'],
+                "observacoes" => $lista['observacoes'],
+                "outras_observacoes" => $lista['outras_observacoes'],
+                "lista_produtos" => $lista['lista_produtos']
             );
         }
     } else {
@@ -158,8 +170,7 @@ if (empty($lista['nome_cliente'])) {
 
             $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente>"
                     . "<tipo>%s</tipo>"
-                    . "<data_evento>%s</data_evento></lista>", 
-                    $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento']);
+                    . "<data_evento>%s</data_evento></lista>", $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento']);
 
 // grava log
             $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
@@ -191,14 +202,26 @@ if (empty($lista['nome_cliente'])) {
                 else
                     $listas[] = $res["resultado"]["dados"]["lista"];
 
-                foreach ($listas as $list) {                   
+                foreach ($listas as $list) {
                     /* dados do produto */
                     $wsresult[] = array(
                         "cliente_codigo" => $list["codigo_cliente"],
                         "cliente_nome" => $list["name_cliente"],
                         "tipo_codigo" => $list["tipo"],
                         "tipo_nome" => $list["tipo_name"],
-                        "data_evento" => $list["data_evento"]
+                        "data_evento" => $list["data_evento"],
+                        "noivo_nome" => $list['nome_noivo'],
+                        "noivo_pai" => $list['pai_noivo'],
+                        "noivo_mae" => $list['mae_noivo'],
+                        "noivo_cep" => $list['cep_noivo'],
+                        "noivo_telefone" => $list['telefone_noivo'],
+                        "noivo_endereco" => $list['endereco_noivo'],
+                        "noivo_bairro" => $list['bairro_noivo'],
+                        "noivo_cidade" => $list['cidade_noivo'],
+                        "noivo_estado" => $list['estado_noivo'],
+                        "observacoes" => $list['observacoes'],
+                        "outras_observacoes" => $list['outras_observacoes'],
+                        "lista_produtos" => $list['lista_produtos']
                     );
                 }
             }
