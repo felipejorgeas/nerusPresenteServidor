@@ -87,6 +87,8 @@ if (empty($lista['nome_cliente'])) {
 
         $wsstatus = 1;
         $wsresult = array();
+        
+        usort($listas, 'ordenarLista');
 
         foreach ($listas as $lista) {
             /* dados do produto */
@@ -162,6 +164,8 @@ if (empty($lista['nome_cliente'])) {
 
         $wsstatus = 1;
         $wsresult = array();
+        
+        usort($clientes, 'ordenarCliente');
 
         foreach ($clientes as $cliente) {
 

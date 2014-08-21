@@ -80,6 +80,8 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["cliente"])
     $wsstatus = 1;
     $wsresult = array();
 
+    usort($clientes, 'ordenarCliente');
+
     foreach ($clientes as $cliente) {
         /* dados do produto */
         $wsresult[] = array(
