@@ -30,6 +30,7 @@ $client = new nusoap_client($ws);
 $client->useHTTPPersistentConnection();
 
 $cliente['cliente_nome'] = strtoupper($cliente['cliente_nome']);
+$cliente['cliente_nome'] = removerAcentos($cliente['cliente_nome']);
 
 // serial do cliente
 $serail_number_cliente = readSerialNumber();

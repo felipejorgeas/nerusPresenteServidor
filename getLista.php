@@ -109,7 +109,7 @@ if (empty($lista['nome_cliente'])) {
                 "noivo_estado" => $lista['estado_noivo'],
                 "observacoes" => $lista['observacoes'],
                 "outras_observacoes" => $lista['outras_observacoes'],
-                "lista_produtos" => $lista['lista_produtos']
+                "lista_produtos" => $lista['lista_produtos']['produto']
             );
         }
     } else {
@@ -125,6 +125,8 @@ if (empty($lista['nome_cliente'])) {
 } else {
 
     $lista['nome_cliente'] = sprintf("%%%s%%", $lista['nome_cliente']);
+    
+    $lista['nome_cliente'] = removerAcentos($lista['nome_cliente']);
 
     //url de ws
     $client = new nusoap_client($wsCliente);
@@ -196,6 +198,8 @@ if (empty($lista['nome_cliente'])) {
 
 // converte o xml em um array
             $res = XML2Array::createArray($result);
+//            echo "<pre>";
+//            print_r($res);
 
             if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
 
@@ -207,6 +211,7 @@ if (empty($lista['nome_cliente'])) {
                     $listas[] = $res["resultado"]["dados"]["lista"];
 
                 foreach ($listas as $list) {
+                  
                     /* dados do produto */
                     $wsresult[] = array(
                         "cliente_codigo" => $list["codigo_cliente"],
@@ -225,7 +230,7 @@ if (empty($lista['nome_cliente'])) {
                         "noivo_estado" => $list['estado_noivo'],
                         "observacoes" => $list['observacoes'],
                         "outras_observacoes" => $list['outras_observacoes'],
-                        "lista_produtos" => $list['lista_produtos']
+                        "lista_produtos" => $list['lista_produtos']['produto']
                     );
                 }
             }

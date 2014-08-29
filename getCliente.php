@@ -20,8 +20,10 @@ $dados = $_REQUEST['dados'];
 $wscallback = $dados['wscallback'];
 $cliente = $dados['cliente'];
 
-if (!empty($cliente['nome_cliente']))
+if (!empty($cliente['nome_cliente'])){
     $cliente['nome_cliente'] = sprintf("%%%s%%", $cliente['nome_cliente']);
+    $cliente['nome_cliente'] = removerAcentos($cliente['nome_cliente']);
+}
 
 /* variaveis de retorno do ws */
 $wsstatus = 0;

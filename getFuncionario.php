@@ -21,6 +21,8 @@ $dados = $_REQUEST['dados'];
 $wscallback = $dados['wscallback'];
 $usuario = $dados['usuario'];
 
+$usuario['apelido'] = removerAcentos($usuario['apelido']);
+
 /* variaveis de retorno do ws */
 $wsstatus = 0;
 $wsresult = array();

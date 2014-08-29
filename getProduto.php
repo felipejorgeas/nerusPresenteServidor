@@ -47,6 +47,7 @@ $serail_number_cliente = readSerialNumber();
  * 1 => texto
 */
 if($produto['search_type'] == 1){
+  $produto['codigo'] = removerAcentos($produto['codigo']);
   $dados = sprintf("<dados>\n\t<nome_produto>%%%s%%</nome_produto>\n\t<loadstk>0</loadstk>\n</dados>", strtoupper($produto['codigo']));
 }
 else{
