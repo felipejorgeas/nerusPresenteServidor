@@ -123,12 +123,11 @@ if (empty($lista['nome_cliente'])) {
         returnWS($wscallback, $wsstatus, $wsresult);
     }
 } else {
-
+  
     $lista['nome_cliente'] = sprintf("%%%s%%", $lista['nome_cliente']);
-    
-    $lista['nome_cliente'] = removerAcentos($lista['nome_cliente']);
 
-    //url de ws
+    
+//url de ws
     $client = new nusoap_client($wsCliente);
     $client->useHTTPPersistentConnection();
 
