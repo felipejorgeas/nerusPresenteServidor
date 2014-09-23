@@ -13,12 +13,12 @@ $log = new Log();
 
 /* obtendo algumas configuracoes do sistema */
 $conf = getConfig();
-$ws = sprintf("%s/produtows.php", $conf['SISTEMA']['saciWS']);
+$wsProduto = sprintf("%s/produtows.php", $conf['SISTEMA']['saciWS']);
+$wsFabricante = sprintf("%s/fabricantews.php", $conf['SISTEMA']['saciWS']);
+$wsCentroLucro = sprintf("%s/categoriaws.php", $conf['SISTEMA']['saciWS']);
 
 /* lista de lojas para produtos com e sem grades */
-$lojas_com_grade = $conf['MISC']['lojaComGrade'];
-$lojas_sem_grade = $conf['MISC']['lojaSemGrade'];
-$grade_encomenda = $conf['MISC']['gradeEncomend'];
+//$lojas = $conf['MISC']['loja'];
 
 /* caminhos completos para a localizacao e acesso as imagens dos produtos */
 $url_imgs = $conf['SISTEMA']['urlImgs'];
@@ -36,7 +36,7 @@ $wsstatus = 0;
 $wsresult = array();
 
 // url de ws
-$client = new nusoap_client($ws);
+$client = new nusoap_client($wsProduto);
 $client->useHTTPPersistentConnection();
 
 // serial do cliente
@@ -46,11 +46,11 @@ $serail_number_cliente = readSerialNumber();
  * 0 => numero
  * 1 => texto
 */
-if($produto['search_type'] == 1){
-  $dados = sprintf("<dados>\n\t<nome_produto>%%%s%%</nome_produto>\n\t<loadstk>0</loadstk>\n</dados>", strtoupper($produto['codigo']));
+if($produto['searchType'] == 1){
+  $dados = sprintf("<dados>\n\t<nome_produto>%%%s%%</nome_produto>\n\t<loadstk>0</loadstk>\n</dados>", strtoupper($produto['produto']));
 }
 else{
-  $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo']);
+  $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['produto']);
 }
 
 // grava log
@@ -75,7 +75,7 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
    * 0 => numero
    * 1 => texto
   */
-  if($produto['search_type'] == 1){
+  if($produto['searchType'] == 1){
 
     $produtos = array();
 
@@ -88,10 +88,49 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
     $wsresult = array();
 
     foreach($produtos as $prd){
+      $img = "";
+      
+      /* define o caminho completo do diteretorio de imagens do produto buscado */
+      $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+      $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
+
+      /* verifica se o diretorio existe */
+      if (file_exists($dir_full)) {
+        /* se o diretorio existir, percorre o diretorio buscando as imagens */
+        $handle = opendir($dir_full);
+        while (false !== ($file = readdir($handle))) {
+          if (in_array($file, array(".", "..")))
+            continue;
+
+          //obtem a extensao do anexo
+          $filepath = explode(".", $file);
+          $extensao = end($filepath);
+
+          if(!in_array($extensao, $extensions_enable))
+            continue;
+
+          /* verifica se a miniatura a existe */
+          $fileOk = explode('_min.' . $extensao, $file);
+          if(key_exists("1", $fileOk))
+            continue;
+
+          //define o nome da miniatura da imagem
+          $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
+
+          //gera a miniatura
+          $image = WideImage::load($dir_full . $file);
+          $resized = $image->resize(300, 250);
+          $resized->saveToFile($dir_full . $file_min, 80);
+
+          $img = $url_full . $file;
+        }
+      }
+      
       /* dados do produto */
       $wsresult[] = array(
           'codigo' => $prd['codigo_produto'],
-          'descricao' => $prd['nome_produto'] . ' ' . $prd['nome_unidade']
+          'descricao' => $prd['nome_produto'] . ' ' . $prd['nome_unidade'],
+          'img' => $img
       );
     }
   }
@@ -101,17 +140,71 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
     $produto = $res['resultado']['dados']['produto'];
 
     $wsstatus = 1;
-
+    
     /* dados do produto */
     $wsresult = array(
         'codigo' => $produto['codigo_produto'],
         'descricao' => $produto['nome_produto'] . ' ' . $produto['nome_unidade'],
         'unidade' => $produto['nome_unidade'],
         'multiplicador' => $produto['multiplicador'],
+        'preco' => 0,
+        'centrolucro' => array(),
+        'fornecedor' => array(),
+        'grades' => array(),
         'estoque' => array(),
         'img' => array(),
     );
 
+    // busca os dados do fornecedor
+    $dados = sprintf("<dados>\n\t<codigo_fabricante>%d</codigo_fabricante>\n</dados>", $produto['codigo_fabricante']);
+
+    // grava log
+    $log->addLog(ACAO_REQUISICAO, "getFabricante", $dados, SEPARADOR_INICIO);
+
+    // monta os parametros a serem enviados
+    $params = array(
+        'crypt' => $serail_number_cliente,
+        'dados' => $dados
+    );
+
+    // realiza a chamada de um metodo do ws passando os paramentros    
+    $client = new nusoap_client($wsFabricante);
+    $client->useHTTPPersistentConnection();
+    $result = $client->call("listar", $params);
+    $res = XML2Array::createArray($result);
+
+    // grava log
+    $log->addLog(ACAO_RETORNO, "dadosFabricante", $result);
+
+    if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['fabricante'])) {
+      $wsresult['fornecedor'] = $res['resultado']['dados']['fabricante'];
+    }
+    
+    // busca os dados do centro de lucro
+    $dados = sprintf("<dados>\n\t<codigo_categoria>%d</codigo_categoria>\n</dados>", $produto['codigo_centro_lucro']);
+
+    // grava log
+    $log->addLog(ACAO_REQUISICAO, "getCentroLucro", $dados, SEPARADOR_INICIO);
+
+    // monta os parametros a serem enviados
+    $params = array(
+        'crypt' => $serail_number_cliente,
+        'dados' => $dados
+    );
+
+    // realiza a chamada de um metodo do ws passando os paramentros    
+    $client = new nusoap_client($wsCentroLucro);
+    $client->useHTTPPersistentConnection();
+    $result = $client->call("listar", $params);
+    $res = XML2Array::createArray($result);
+
+    // grava log
+    $log->addLog(ACAO_RETORNO, "dadosCentroLucro", $result);
+
+    if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['categoria'])) {
+      $wsresult['centrolucro'] = $res['resultado']['dados']['categoria'];
+    }
+    
     /* variavel de controle para verificar se possue estoque disponivel */
     $estoqueOk = false;
 
@@ -127,35 +220,23 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
       foreach($estoques as $estoque){
 
         // seta o preco
-        $wsresult['preco'] = number_format($estoque['preco'] / 100, 2, ',', '.');
+        // $wsresult['preco'] = number_format($estoque['preco'] / 100, 2, ',', '.');
+        $wsresult['preco'] = $estoque['preco'];
 
-        $lojas = array();
-        $insertStk = false;
+        $qtty_estoque = $estoque['qtty'] - $estoque['qtty_reservada'];
+        $qtty_estoque = $qtty_estoque > 0 ? $qtty_estoque : 0;
+        $estoqueOk = true;
 
-        /* verifica se o produto possui grade */
-        if(!empty($estoque['grade'])){
-          /* se o produto possuir grade, lista apenas os produtos de determinadas lojas */
-          $lojas = explode(",", str_replace(" ", "", $lojas_com_grade));
-        }
-        else{
-          /* se o produto nao possuir grade, lista apenas os produtos de determinadas loas */
-          $lojas = explode(",", str_replace(" ", "", $lojas_sem_grade));
-        }
-
-        /* obtem apenas o estoque da lista de lojas definidas */
-        if(in_array($estoque['codigo_loja'], $lojas)){
-          $qtty_estoque = $estoque['qtty'] - $estoque['qtty_reservada'];
-          $qtty_estoque = $qtty_estoque > 0 ? $qtty_estoque : 0;
-          $estoqueOk = true;
-
-          $wsresult['estoque'][] = array(
-              'barcode' => $estoque['codigo_barra_produto'],
-              'grade' => $estoque['grade'],
-              'codigo_loja' => $estoque['codigo_loja'],
-              'nome_loja' => $estoque['nome_loja'],
-              'qtty' => $qtty_estoque
-          );
-        }
+        if(!in_array($estoque['grade'], $wsresult['grades']))
+          $wsresult['grades'][] = $estoque['grade'];
+        
+        $wsresult['estoque'][] = array(
+            'barcode' => $estoque['codigo_barra_produto'],
+            'grade' => $estoque['grade'],
+            'codigo_loja' => $estoque['codigo_loja'],
+            'nome_loja' => $estoque['nome_loja'],
+            'qtty' => $qtty_estoque
+        );
       }
     }
 
@@ -163,8 +244,8 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
     if(!$estoqueOk){
       /* monta o xml de retorno */
       $wsstatus = 0;
-      //$wsresult['wserror'] = "Produto sem estoque em nenhuma loja no momento!";
-      $wsresult['wserror'] = "N&atilde;o h&atilde; estoque cadastrado para este produto!";
+      $wsresult['wserror'] = "Produto sem estoque em nenhuma loja no momento!";
+      //$wsresult['wserror'] = "N&atilde;o h&atilde; estoque cadastrado para este produto!";
 
       // grava log
       $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
@@ -204,9 +285,9 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
         $resized = $image->resize(300, 250);
         $resized->saveToFile($dir_full . $file_min, 80);
 
-        $wsresult['img'][] = array(
+        array_push($wsresult['img'], array(
             'arquivo' => $url_full . $file
-        );
+        ));
       }
     }
   }
@@ -215,7 +296,7 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])
 else{
   /* monta o xml de retorno */
   $wsstatus = 0;
-  $wsresult['wserror'] = sprintf("Produto <strong>%s</strong> n&atilde;o encontrado!", $produto['codigo']);
+  $wsresult['wserror'] = sprintf("Produto n&atilde;o encontrado!", $produto['codigo']);
 
   // grava log
   $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);

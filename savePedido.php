@@ -12,7 +12,7 @@ $log = new Log();
 
 /* obtendo algumas configuracoes do sistema */
 $conf = getConfig();
-$ws = sprintf("%s/listaws.php", $conf['SISTEMA']['saciWS']);
+$ws = sprintf("%s/pedidows.php", $conf['SISTEMA']['saciWS']);
 $storeno = $conf["MISC"]['loja'];
 $pdvno = $conf["MISC"]['pdv'];
 $dir_tmp = "tmp/";
@@ -30,8 +30,8 @@ $file = $dados["file"];
 $content = file_get_contents($dir_tmp . $file);
 unlink($dir_tmp . $file);
 
-$lista = (array) json_decode($content);
-$produtos = $lista['produtos'];
+$pedido = (array) json_decode($content);
+$produtos = $pedido['produtos'];
 
 // converte cada posicao object para array
 foreach ($produtos as &$prd)
@@ -71,10 +71,10 @@ $dados = sprintf("
     <tipo>%s</tipo>
     <data_evento>%s</data_evento>
     %s
-  </dados>", $lista['clienteCodigo'], $lista['tipoListaCodigo'], $lista['dataEvento'], $produtos);
+  </dados>", $pedido['clienteCodigo'], $pedido['tipoListaCodigo'], $pedido['dataEvento'], $produtos);
 
 // grava log
-$log->addLog(ACAO_REQUISICAO, "atualizaListaPorCodigoInterno", $dados, SEPARADOR_INICIO);
+$log->addLog(ACAO_REQUISICAO, "atualizaPedidoPorCodigoInterno", $dados, SEPARADOR_INICIO);
 
 // monta os parametros a serem enviados
 $params = array(
@@ -83,7 +83,7 @@ $params = array(
 );
 
 // realiza a chamada de um metodo do ws passando os paramentros
-$result = $client->call('atualizaListaPorCodigoInterno', $params);
+$result = $client->call('atualizaPedidoPorCodigoInterno', $params);
 $result = removerAcentos($result);
 
 $res = XML2Array::createArray($result);
@@ -91,7 +91,7 @@ $res = XML2Array::createArray($result);
 // grava log
 $log->addLog(ACAO_RETORNO, "dadosLista", $result);
 
-if (isset($res['resultado']['dados']['lista'])) {
+if (isset($res['resultado']['dados']['pedido'])) {
   $wsstatus = 1;
   $wsresult = array();
 }

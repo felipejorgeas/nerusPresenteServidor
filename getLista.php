@@ -15,9 +15,15 @@ $log = new Log();
 $conf = getConfig();
 $wsLista = sprintf("%s/listaws.php", $conf["SISTEMA"]["saciWS"]);
 $wsCliente = sprintf("%s/clientews.php", $conf["SISTEMA"]["saciWS"]);
+$wsFabricante = sprintf("%s/fabricantews.php", $conf['SISTEMA']['saciWS']);
+$wsProduto = sprintf("%s/produtows.php", $conf['SISTEMA']['saciWS']);
 
 /* loja padrao */
 $loja = $conf["MISC"]["loja"];
+
+
+/* cliente para listas default */
+$clienteDefault = 15926;
 
 /* caminhos completos para a localizacao e acesso as imagens dos produtos */
 $url_imgs = $conf["SISTEMA"]["urlImgs"];
@@ -37,213 +43,484 @@ $wsresult = array();
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
 
-if (empty($lista['nome_cliente'])) {
-// url de ws
-    $client = new nusoap_client($wsLista);
-    $client->useHTTPPersistentConnection();
+if ($lista['listaDefault'] == 1) {
+  $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente><tipo>%s</tipo></lista>", $clienteDefault, $lista["tipo"]);
 
-    $dados = "<lista>";
-
-    foreach ($lista as $key => $value) {
-
-        if (!empty($value) || is_numeric($value)) {
-            $dados .= sprintf("<%s>%s</%s>\n", $key, $value, $key);
-        } else {
-            $dados .= sprintf("<%s/>\n", $key);
-        }
-    }
-
-    $dados .= "</lista>";
+  // url de ws
+  $client = new nusoap_client($wsLista);
+  $client->useHTTPPersistentConnection();
 
 // grava log
-    $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
+  $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
 
 // monta os parametros a serem enviados
-    $params = array(
-        "crypt" => $serail_number_cliente,
-        "dados" => $dados
-    );
+  $params = array(
+      "crypt" => $serail_number_cliente,
+      "dados" => $dados
+  );
 
 // realiza a chamada de um metodo do ws passando os paramentros
-    $result = $client->call("listar", $params);
+  $result = $client->call("listar", $params);
 
 // remove acentos dos dados
-    $result = removerAcentos($result);
+  $result = removerAcentos($result);
 
 // grava log
-    $log->addLog(ACAO_RETORNO, "dadosLista", $result);
+  $log->addLog(ACAO_RETORNO, "dadosLista", $result);
 
 // converte o xml em um array
-    $res = XML2Array::createArray($result);
+  $res = XML2Array::createArray($result);
 
-    if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
+  if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
+
+    $lista = $res["resultado"]["dados"]["lista"];
+
+    $wsstatus = 1;
+    $wsresult = array();
+
+    foreach ($lista['lista_produtos']['produto'] as &$produto) {
+      // busca os dados do fornecedor
+      $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo_produto']);
+
+      // grava log
+      $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
+
+      // monta os parametros a serem enviados
+      $params = array(
+          'crypt' => $serail_number_cliente,
+          'dados' => $dados
+      );
+
+      // realiza a chamada de um metodo do ws passando os paramentros    
+      $client = new nusoap_client($wsProduto);
+      $client->useHTTPPersistentConnection();
+      $result = $client->call("listar", $params);
+      $res = XML2Array::createArray($result);
+
+      // grava log
+      $log->addLog(ACAO_RETORNO, "dadosProduto", $result);
+
+      if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])) {
+        $prd = $res['resultado']['dados']['produto'];
+
+        $produto["codigo"] = $prd['codigo_produto'];
+        $produto["descricao"] = $prd['nome_produto'] . " " . $prd['nome_unidade'];
+        $produto["unidade"] = $prd['nome_unidade'];
+        $produto["multiplicador"] = $prd['multiplicador'];
+
+        /* define o caminho completo do diteretorio de imagens do produto buscado */
+        $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+        $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
+
+        /* verifica se o diretorio existe */
+        if (file_exists($dir_full)) {
+          /* se o diretorio existir, percorre o diretorio buscando as imagens */
+          $handle = opendir($dir_full);
+          while (false !== ($file = readdir($handle))) {
+            if (in_array($file, array(".", "..")))
+              continue;
+
+            //obtem a extensao do anexo
+            $filepath = explode(".", $file);
+            $extensao = end($filepath);
+
+            if (!in_array($extensao, $extensions_enable))
+              continue;
+
+            /* verifica se a miniatura a existe */
+            $fileOk = explode('_min.' . $extensao, $file);
+            if (key_exists("1", $fileOk))
+              continue;
+
+            //define o nome da miniatura da imagem
+            $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
+
+            //gera a miniatura
+            $image = WideImage::load($dir_full . $file);
+            $resized = $image->resize(300, 250);
+            $resized->saveToFile($dir_full . $file_min, 80);
+
+            array_push($produto["img"], array(
+                'arquivo' => $url_full . $file
+            ));
+          }
+        }
+      }
+    }
+
+    /* dados do produto */
+    $wsresult = array(
+        "cliente_codigo" => $lista["codigo_cliente"],
+        "cliente_nome" => $lista["name_cliente"],
+        "tipo_codigo" => $lista["tipo"],
+        "tipo_nome" => $lista["tipo_name"],
+        "data_evento" => $lista["data_evento"],
+        "noivo_nome" => $lista['nome_noivo'],
+        "noivo_pai" => $lista['pai_noivo'],
+        "noivo_mae" => $lista['mae_noivo'],
+        "noivo_cep" => $lista['cep_noivo'],
+        "noivo_telefone" => $lista['telefone_noivo'],
+        "noivo_endereco" => $lista['endereco_noivo'],
+        "noivo_bairro" => $lista['bairro_noivo'],
+        "noivo_cidade" => $lista['cidade_noivo'],
+        "noivo_estado" => $lista['estado_noivo'],
+        "observacoes" => $lista['observacoes'],
+        "outras_observacoes" => $lista['outras_observacoes'],
+        "produtos" => $lista['lista_produtos']['produto']
+    );
+  }
+}
+
+else if (empty($lista['nome_cliente'])) {
+// url de ws
+  $client = new nusoap_client($wsLista);
+  $client->useHTTPPersistentConnection();
+
+  $dados = "<lista>";
+
+  foreach ($lista as $key => $value) {
+
+    if (!empty($value) || is_numeric($value)) {
+      $dados .= sprintf("<%s>%s</%s>\n", $key, $value, $key);
+    } else {
+      $dados .= sprintf("<%s/>\n", $key);
+    }
+  }
+
+  $dados .= "</lista>";
+
+// grava log
+  $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
+
+// monta os parametros a serem enviados
+  $params = array(
+      "crypt" => $serail_number_cliente,
+      "dados" => $dados
+  );
+
+// realiza a chamada de um metodo do ws passando os paramentros
+  $result = $client->call("listar", $params);
+
+// remove acentos dos dados
+  $result = removerAcentos($result);
+
+// grava log
+  $log->addLog(ACAO_RETORNO, "dadosLista", $result);
+
+// converte o xml em um array
+  $res = XML2Array::createArray($result);
+
+  if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
+
+    $listas = array();
+
+    if (key_exists("0", $res["resultado"]["dados"]["lista"]))
+      $listas = $res["resultado"]["dados"]["lista"];
+    else
+      $listas[] = $res["resultado"]["dados"]["lista"];
+
+    $wsstatus = 1;
+    $wsresult = array();
+
+    usort($listas, 'ordenarLista');
+
+    foreach ($listas as $lista) {
+
+      foreach ($lista['lista_produtos']['produto'] as &$produto) {
+        // busca os dados do fornecedor
+        $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo_produto']);
+
+        // grava log
+        $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
+
+        // monta os parametros a serem enviados
+        $params = array(
+            'crypt' => $serail_number_cliente,
+            'dados' => $dados
+        );
+
+        // realiza a chamada de um metodo do ws passando os paramentros    
+        $client = new nusoap_client($wsProduto);
+        $client->useHTTPPersistentConnection();
+        $result = $client->call("listar", $params);
+        $res = XML2Array::createArray($result);
+
+        // grava log
+        $log->addLog(ACAO_RETORNO, "dadosProduto", $result);
+
+        if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])) {
+          $prd = $res['resultado']['dados']['produto'];
+
+          $produto["codigo"] = $prd['codigo_produto'];
+          $produto["descricao"] = $prd['nome_produto'] . " " . $prd['nome_unidade'];
+          $produto["unidade"] = $prd['nome_unidade'];
+          $produto["multiplicador"] = $prd['multiplicador'];
+
+          /* define o caminho completo do diteretorio de imagens do produto buscado */
+          $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+          $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
+
+          /* verifica se o diretorio existe */
+          if (file_exists($dir_full)) {
+            /* se o diretorio existir, percorre o diretorio buscando as imagens */
+            $handle = opendir($dir_full);
+            while (false !== ($file = readdir($handle))) {
+              if (in_array($file, array(".", "..")))
+                continue;
+
+              //obtem a extensao do anexo
+              $filepath = explode(".", $file);
+              $extensao = end($filepath);
+
+              if (!in_array($extensao, $extensions_enable))
+                continue;
+
+              /* verifica se a miniatura a existe */
+              $fileOk = explode('_min.' . $extensao, $file);
+              if (key_exists("1", $fileOk))
+                continue;
+
+              //define o nome da miniatura da imagem
+              $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
+
+              //gera a miniatura
+              $image = WideImage::load($dir_full . $file);
+              $resized = $image->resize(300, 250);
+              $resized->saveToFile($dir_full . $file_min, 80);
+
+              array_push($produto["img"], array(
+                  'arquivo' => $url_full . $file
+              ));
+            }
+          }
+        }
+      }
+
+      /* dados do produto */
+      $wsresult[] = array(
+          "cliente_codigo" => $lista["codigo_cliente"],
+          "cliente_nome" => $lista["name_cliente"],
+          "tipo_codigo" => $lista["tipo"],
+          "tipo_nome" => $lista["tipo_name"],
+          "data_evento" => $lista["data_evento"],
+          "noivo_nome" => $lista['nome_noivo'],
+          "noivo_pai" => $lista['pai_noivo'],
+          "noivo_mae" => $lista['mae_noivo'],
+          "noivo_cep" => $lista['cep_noivo'],
+          "noivo_telefone" => $lista['telefone_noivo'],
+          "noivo_endereco" => $lista['endereco_noivo'],
+          "noivo_bairro" => $lista['bairro_noivo'],
+          "noivo_cidade" => $lista['cidade_noivo'],
+          "noivo_estado" => $lista['estado_noivo'],
+          "observacoes" => $lista['observacoes'],
+          "outras_observacoes" => $lista['outras_observacoes'],
+          "produtos" => $lista['lista_produtos']['produto']
+      );
+    }
+  }
+
+  else {
+    /* monta o xml de retorno */
+    $wsstatus = 0;
+    $wsresult["wserror"] = "Nenhuma lista encontrada!";
+
+    // grava log
+    $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
+
+    returnWS($wscallback, $wsstatus, $wsresult);
+  }
+} else {
+
+  $lista['nome_cliente'] = sprintf("%%%s%%", $lista['nome_cliente']);
+
+//url de ws
+  $client = new nusoap_client($wsCliente);
+  $client->useHTTPPersistentConnection();
+
+  $dados = sprintf("<dados><nome_cliente>%s</nome_cliente></dados>", $lista['nome_cliente']);
+
+// grava log
+  $log->addLog(ACAO_REQUISICAO, "getCliente", $dados, SEPARADOR_INICIO);
+
+// monta os parametros a serem enviados
+  $params = array(
+      "crypt" => $serail_number_cliente,
+      "dados" => $dados
+  );
+
+// realiza a chamada de um metodo do ws passando os paramentros
+  $result = $client->call("listar", $params);
+
+// remove acentos dos dados
+  $result = removerAcentos($result);
+
+// grava log
+  $log->addLog(ACAO_RETORNO, "dadosCliente", $result);
+
+// converte o xml em um array
+  $res = XML2Array::createArray($result);
+
+  if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["cliente"])) {
+
+    $clientes = array();
+
+    if (key_exists("0", $res["resultado"]["dados"]["cliente"]))
+      $clientes = $res["resultado"]["dados"]["cliente"];
+    else
+      $clientes[] = $res["resultado"]["dados"]["cliente"];
+
+    $wsstatus = 1;
+    $wsresult = array();
+
+    usort($clientes, 'ordenarCliente');
+
+    foreach ($clientes as $cliente) {
+
+      $client = new nusoap_client($wsLista);
+      $client->useHTTPPersistentConnection();
+
+      $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente>"
+              . "<tipo>%s</tipo>"
+              . "<data_evento>%s</data_evento></lista>", $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento']);
+
+// grava log
+      $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
+
+// monta os parametros a serem enviados
+      $params = array(
+          "crypt" => $serail_number_cliente,
+          "dados" => $dados
+      );
+
+// realiza a chamada de um metodo do ws passando os paramentros
+      $result = $client->call("listar", $params);
+
+// remove acentos dos dados
+      $result = removerAcentos($result);
+
+// grava log
+      $log->addLog(ACAO_RETORNO, "dadosLista", $result);
+
+// converte o xml em um array
+      $res = XML2Array::createArray($result);
+//            echo "<pre>";
+//            print_r($res);
+
+      if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
 
         $listas = array();
 
         if (key_exists("0", $res["resultado"]["dados"]["lista"]))
-            $listas = $res["resultado"]["dados"]["lista"];
+          $listas = $res["resultado"]["dados"]["lista"];
         else
-            $listas[] = $res["resultado"]["dados"]["lista"];
+          $listas[] = $res["resultado"]["dados"]["lista"];
 
-        $wsstatus = 1;
-        $wsresult = array();
-        
-        usort($listas, 'ordenarLista');
+        foreach ($listas as $list) {
 
-        foreach ($listas as $lista) {
-            /* dados do produto */
-            $wsresult[] = array(
-                "cliente_codigo" => $lista["codigo_cliente"],
-                "cliente_nome" => $lista["name_cliente"],
-                "tipo_codigo" => $lista["tipo"],
-                "tipo_nome" => $lista["tipo_name"],
-                "data_evento" => $lista["data_evento"],
-                "noivo_nome" => $lista['nome_noivo'],
-                "noivo_pai" => $lista['pai_noivo'],
-                "noivo_mae" => $lista['mae_noivo'],
-                "noivo_cep" => $lista['cep_noivo'],
-                "noivo_telefone" => $lista['telefone_noivo'],
-                "noivo_endereco" => $lista['endereco_noivo'],
-                "noivo_bairro" => $lista['bairro_noivo'],
-                "noivo_cidade" => $lista['cidade_noivo'],
-                "noivo_estado" => $lista['estado_noivo'],
-                "observacoes" => $lista['observacoes'],
-                "outras_observacoes" => $lista['outras_observacoes'],
-                "lista_produtos" => $lista['lista_produtos']['produto']
-            );
-        }
-    } else {
-        /* monta o xml de retorno */
-        $wsstatus = 0;
-        $wsresult["wserror"] = "Nenhuma lista encontrada!";
+          foreach ($list['lista_produtos']['produto'] as &$produto) {
 
-        // grava log
-        $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
+            // busca os dados do fornecedor
+            $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo_produto']);
 
-        returnWS($wscallback, $wsstatus, $wsresult);
-    }
-} else {
-  
-    $lista['nome_cliente'] = sprintf("%%%s%%", $lista['nome_cliente']);
+            // grava log
+            $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
 
-    
-//url de ws
-    $client = new nusoap_client($wsCliente);
-    $client->useHTTPPersistentConnection();
-
-    $dados = sprintf("<dados><nome_cliente>%s</nome_cliente></dados>", $lista['nome_cliente']);
-
-// grava log
-    $log->addLog(ACAO_REQUISICAO, "getCliente", $dados, SEPARADOR_INICIO);
-
-// monta os parametros a serem enviados
-    $params = array(
-        "crypt" => $serail_number_cliente,
-        "dados" => $dados
-    );
-
-// realiza a chamada de um metodo do ws passando os paramentros
-    $result = $client->call("listar", $params);
-
-// remove acentos dos dados
-    $result = removerAcentos($result);
-
-// grava log
-    $log->addLog(ACAO_RETORNO, "dadosCliente", $result);
-
-// converte o xml em um array
-    $res = XML2Array::createArray($result);
-
-    if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["cliente"])) {
-
-        $clientes = array();
-
-        if (key_exists("0", $res["resultado"]["dados"]["cliente"]))
-            $clientes = $res["resultado"]["dados"]["cliente"];
-        else
-            $clientes[] = $res["resultado"]["dados"]["cliente"];
-
-        $wsstatus = 1;
-        $wsresult = array();
-        
-        usort($clientes, 'ordenarCliente');
-
-        foreach ($clientes as $cliente) {
-
-            $client = new nusoap_client($wsLista);
-            $client->useHTTPPersistentConnection();
-
-            $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente>"
-                    . "<tipo>%s</tipo>"
-                    . "<data_evento>%s</data_evento></lista>", $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento']);
-
-// grava log
-            $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
-
-// monta os parametros a serem enviados
+            // monta os parametros a serem enviados
             $params = array(
-                "crypt" => $serail_number_cliente,
-                "dados" => $dados
+                'crypt' => $serail_number_cliente,
+                'dados' => $dados
             );
 
-// realiza a chamada de um metodo do ws passando os paramentros
+            // realiza a chamada de um metodo do ws passando os paramentros    
+            $client = new nusoap_client($wsProduto);
+            $client->useHTTPPersistentConnection();
             $result = $client->call("listar", $params);
-
-// remove acentos dos dados
-            $result = removerAcentos($result);
-
-// grava log
-            $log->addLog(ACAO_RETORNO, "dadosLista", $result);
-
-// converte o xml em um array
             $res = XML2Array::createArray($result);
-//            echo "<pre>";
-//            print_r($res);
 
-            if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["lista"])) {
+            // grava log
+            $log->addLog(ACAO_RETORNO, "dadosProduto", $result);
 
-                $listas = array();
+            if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])) {
+              $prd = $res['resultado']['dados']['produto'];
 
-                if (key_exists("0", $res["resultado"]["dados"]["lista"]))
-                    $listas = $res["resultado"]["dados"]["lista"];
-                else
-                    $listas[] = $res["resultado"]["dados"]["lista"];
+              $produto["codigo"] = $prd['codigo_produto'];
+              $produto["descricao"] = $prd['nome_produto'] . " " . $prd['nome_unidade'];
+              $produto["unidade"] = $prd['nome_unidade'];
+              $produto["multiplicador"] = $prd['multiplicador'];
 
-                foreach ($listas as $list) {
-                  
-                    /* dados do produto */
-                    $wsresult[] = array(
-                        "cliente_codigo" => $list["codigo_cliente"],
-                        "cliente_nome" => $list["name_cliente"],
-                        "tipo_codigo" => $list["tipo"],
-                        "tipo_nome" => $list["tipo_name"],
-                        "data_evento" => $list["data_evento"],
-                        "noivo_nome" => $list['nome_noivo'],
-                        "noivo_pai" => $list['pai_noivo'],
-                        "noivo_mae" => $list['mae_noivo'],
-                        "noivo_cep" => $list['cep_noivo'],
-                        "noivo_telefone" => $list['telefone_noivo'],
-                        "noivo_endereco" => $list['endereco_noivo'],
-                        "noivo_bairro" => $list['bairro_noivo'],
-                        "noivo_cidade" => $list['cidade_noivo'],
-                        "noivo_estado" => $list['estado_noivo'],
-                        "observacoes" => $list['observacoes'],
-                        "outras_observacoes" => $list['outras_observacoes'],
-                        "lista_produtos" => $list['lista_produtos']['produto']
-                    );
+              /* define o caminho completo do diteretorio de imagens do produto buscado */
+              $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+              $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
+
+              /* verifica se o diretorio existe */
+              if (file_exists($dir_full)) {
+                /* se o diretorio existir, percorre o diretorio buscando as imagens */
+                $handle = opendir($dir_full);
+                while (false !== ($file = readdir($handle))) {
+                  if (in_array($file, array(".", "..")))
+                    continue;
+
+                  //obtem a extensao do anexo
+                  $filepath = explode(".", $file);
+                  $extensao = end($filepath);
+
+                  if (!in_array($extensao, $extensions_enable))
+                    continue;
+
+                  /* verifica se a miniatura a existe */
+                  $fileOk = explode('_min.' . $extensao, $file);
+                  if (key_exists("1", $fileOk))
+                    continue;
+
+                  //define o nome da miniatura da imagem
+                  $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
+
+                  //gera a miniatura
+                  $image = WideImage::load($dir_full . $file);
+                  $resized = $image->resize(300, 250);
+                  $resized->saveToFile($dir_full . $file_min, 80);
+
+                  array_push($produto["img"], array(
+                      'arquivo' => $url_full . $file
+                  ));
                 }
+              }
             }
+          }
+
+          /* dados do produto */
+          $wsresult[] = array(
+              "cliente_codigo" => $list["codigo_cliente"],
+              "cliente_nome" => $list["name_cliente"],
+              "tipo_codigo" => $list["tipo"],
+              "tipo_nome" => $list["tipo_name"],
+              "data_evento" => $list["data_evento"],
+              "noivo_nome" => $list['nome_noivo'],
+              "noivo_pai" => $list['pai_noivo'],
+              "noivo_mae" => $list['mae_noivo'],
+              "noivo_cep" => $list['cep_noivo'],
+              "noivo_telefone" => $list['telefone_noivo'],
+              "noivo_endereco" => $list['endereco_noivo'],
+              "noivo_bairro" => $list['bairro_noivo'],
+              "noivo_cidade" => $list['cidade_noivo'],
+              "noivo_estado" => $list['estado_noivo'],
+              "observacoes" => $list['observacoes'],
+              "outras_observacoes" => $list['outras_observacoes'],
+              "produtos" => $list['lista_produtos']['produto']
+          );
         }
-    } else {
-        /* monta o xml de retorno */
-        $wsstatus = 0;
-        $wsresult["wserror"] = "Nenhuma lista encontrada!";
-
-        // grava log
-        $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
-
-        returnWS($wscallback, $wsstatus, $wsresult);
+      }
     }
+  } else {
+    /* monta o xml de retorno */
+    $wsstatus = 0;
+    $wsresult["wserror"] = "Nenhuma lista encontrada!";
+
+    // grava log
+    $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
+
+    returnWS($wscallback, $wsstatus, $wsresult);
+  }
 }
 
 // grava log
