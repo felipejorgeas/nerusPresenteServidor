@@ -12,9 +12,8 @@ $log = new Log();
 
 /* obtendo algumas configuracoes do sistema */
 $conf = getConfig();
-$ws = sprintf("%s/tipoDeListaDePresentews.php", $conf["SISTEMA"]["saciWS"]);
-  
-
+$ws = sprintf("%s/tipoDeProdutows.php", $conf["SISTEMA"]["saciWS"]);
+ 
 /* loja padrao */
 //$loja = $conf["MISC"]["loja"];
 
@@ -24,13 +23,11 @@ $ws = sprintf("%s/tipoDeListaDePresentews.php", $conf["SISTEMA"]["saciWS"]);
  */
 $dados = $_REQUEST["dados"];
 $wscallback = $dados["wscallback"];
-$tipoDeLista = $dados["tipo_de_lista"];
+$tipoDeProduto = $dados["tipo_de_produto"];
 
-
-//$tipoDelista["codigo"] = 0;
-//$tipoDelista["nome"] = "";
-//$wscallback = "wsResponseTipoDeLista";
-
+//$tipoDeProduto["codigo"] = 0;
+//$tipoDeProduto["nome"] = "";
+//$wscallback = "wsResponseTipoDeProduto";
 
 /* variaveis de retorno do ws */
 $wsstatus = 0;
@@ -43,10 +40,10 @@ $client->useHTTPPersistentConnection();
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
 
-$dados = sprintf("<tipo_de_lista>\n\t<codigo>%s</codigo><nome>%s</nome>\n</tipo_de_lista>", $tipoDelista["codigo"], $tipoDelista["nome"]);
+$dados = sprintf("<tipo_de_produto>\n\t<codigo>%s</codigo><nome>%s</nome>\n</tipo_de_produto>", $tiposDeProduto["codigo"], $tiposDeProduto["nome"]);
 
 // grava log
-$log->addLog(ACAO_REQUISICAO, "getTipoDeLista", $dados, SEPARADOR_INICIO);
+$log->addLog(ACAO_REQUISICAO, "getTipoDeProduto", $dados, SEPARADOR_INICIO);
 
 // monta os parametros a serem enviados
 $params = array(
@@ -58,28 +55,28 @@ $params = array(
 $result = $client->call("listar", $params);
 
 // grava log
-$log->addLog(ACAO_RETORNO, "dadosTipoDeLista", $result);
+$log->addLog(ACAO_RETORNO, "dadosTipoDeProduto", $result);
 
 // converte o xml em um array
 $res = XML2Array::createArray($result);
 
-if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["tipoDeListaDePresente"])) {
+if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["tiposDeProduto"])) {
 
-  $listas = array();
+  $tipos = array();
 
-  if(key_exists("0", $res["resultado"]["dados"]["tipoDeListaDePresente"]))
-    $listas = $res["resultado"]["dados"]["tipoDeListaDePresente"];
+  if(key_exists("0", $res["resultado"]["dados"]["tiposDeProduto"]))
+    $tipos = $res["resultado"]["dados"]["tiposDeProduto"];
   else
-    $listas[] = $res["resultado"]["dados"]["tipoDeListaDePresente"];
+    $tipos[] = $res["resultado"]["dados"]["tiposDeProduto"];
 
   $wsstatus = 1;
   $wsresult = array();
 
-  foreach($listas as $lista){
-    /* dados do produto */
+  foreach($tipos as $tipo){
+    /* dados do tipo */
     $wsresult[] = array(
-        "tipo_lista_codigo" => $lista["codigo"],
-        "tipo_lista_nome" => $lista["nome"]
+        "tipo_produto_codigo" => $tipo["codigo"],
+        "tipo_produto_nome" => $tipo["nome"]
     );
   }
 }
@@ -87,7 +84,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["tipoDeList
 else{
   /* monta o xml de retorno */
   $wsstatus = 0;
-  $wsresult["wserror"] = "Nenhum tipo de lista encontrado!";
+  $wsresult["wserror"] = "Nenhum tipo de produto encontrado!";
 
   // grava log
   $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);

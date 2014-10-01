@@ -4,7 +4,6 @@ define('WService_DIR', dirname(__FILE__) . DIRECTORY_SEPARATOR);
 require_once WService_DIR . 'lib/define.inc.php';
 require_once WService_DIR . 'lib/function.inc.php';
 require_once WService_DIR . 'lib/nusoap/nusoap.php';
-require_once WService_DIR . 'lib/wideimage/lib/WideImage.php';
 require_once WService_DIR . 'classes/XML2Array.class.php';
 require_once WService_DIR . 'classes/Log.class.php';
 

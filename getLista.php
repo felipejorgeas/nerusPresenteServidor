@@ -79,71 +79,45 @@ if ($lista['listaDefault'] == 1) {
     $wsresult = array();
 
     foreach ($lista['lista_produtos']['produto'] as &$produto) {
-      // busca os dados do fornecedor
-      $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo_produto']);
+      
+      $produto["codigo"] = $produto['codigo_produto'];
+      $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
 
-      // grava log
-      $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
+      /* define o caminho completo do diteretorio de imagens do produto buscado */
+      $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+      $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
 
-      // monta os parametros a serem enviados
-      $params = array(
-          'crypt' => $serail_number_cliente,
-          'dados' => $dados
-      );
+      /* verifica se o diretorio existe */
+      if (file_exists($dir_full)) {
+        /* se o diretorio existir, percorre o diretorio buscando as imagens */
+        $handle = opendir($dir_full);
+        while (false !== ($file = readdir($handle))) {
+          if (in_array($file, array(".", "..")))
+            continue;
 
-      // realiza a chamada de um metodo do ws passando os paramentros    
-      $client = new nusoap_client($wsProduto);
-      $client->useHTTPPersistentConnection();
-      $result = $client->call("listar", $params);
-      $res = XML2Array::createArray($result);
+          //obtem a extensao do anexo
+          $filepath = explode(".", $file);
+          $extensao = end($filepath);
 
-      // grava log
-      $log->addLog(ACAO_RETORNO, "dadosProduto", $result);
+          if (!in_array($extensao, $extensions_enable))
+            continue;
 
-      if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])) {
-        $prd = $res['resultado']['dados']['produto'];
+          /* verifica se a miniatura a existe */
+          $fileOk = explode('_min.' . $extensao, $file);
+          if (key_exists("1", $fileOk))
+            continue;
 
-        $produto["codigo"] = $prd['codigo_produto'];
-        $produto["descricao"] = $prd['nome_produto'] . " " . $prd['nome_unidade'];
-        $produto["unidade"] = $prd['nome_unidade'];
-        $produto["multiplicador"] = $prd['multiplicador'];
+          //define o nome da miniatura da imagem
+          $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
 
-        /* define o caminho completo do diteretorio de imagens do produto buscado */
-        $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
-        $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
+          //gera a miniatura
+          $image = WideImage::load($dir_full . $file);
+          $resized = $image->resize(300, 250);
+          $resized->saveToFile($dir_full . $file_min, 80);
 
-        /* verifica se o diretorio existe */
-        if (file_exists($dir_full)) {
-          /* se o diretorio existir, percorre o diretorio buscando as imagens */
-          $handle = opendir($dir_full);
-          while (false !== ($file = readdir($handle))) {
-            if (in_array($file, array(".", "..")))
-              continue;
-
-            //obtem a extensao do anexo
-            $filepath = explode(".", $file);
-            $extensao = end($filepath);
-
-            if (!in_array($extensao, $extensions_enable))
-              continue;
-
-            /* verifica se a miniatura a existe */
-            $fileOk = explode('_min.' . $extensao, $file);
-            if (key_exists("1", $fileOk))
-              continue;
-
-            //define o nome da miniatura da imagem
-            $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
-
-            //gera a miniatura
-            $image = WideImage::load($dir_full . $file);
-            $resized = $image->resize(300, 250);
-            $resized->saveToFile($dir_full . $file_min, 80);
-
-            array_push($produto["img"], array(
-                'arquivo' => $url_full . $file
-            ));
-          }
+          array_push($produto["img"], array(
+              'arquivo' => $url_full . $file
+          ));
         }
       }
     }
@@ -227,71 +201,45 @@ else if (empty($lista['nome_cliente'])) {
     foreach ($listas as $lista) {
 
       foreach ($lista['lista_produtos']['produto'] as &$produto) {
-        // busca os dados do fornecedor
-        $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo_produto']);
+        
+        $produto["codigo"] = $produto['codigo_produto'];
+        $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
+        
+        /* define o caminho completo do diteretorio de imagens do produto buscado */
+        $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+        $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
 
-        // grava log
-        $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
+        /* verifica se o diretorio existe */
+        if (file_exists($dir_full)) {
+          /* se o diretorio existir, percorre o diretorio buscando as imagens */
+          $handle = opendir($dir_full);
+          while (false !== ($file = readdir($handle))) {
+            if (in_array($file, array(".", "..")))
+              continue;
 
-        // monta os parametros a serem enviados
-        $params = array(
-            'crypt' => $serail_number_cliente,
-            'dados' => $dados
-        );
+            //obtem a extensao do anexo
+            $filepath = explode(".", $file);
+            $extensao = end($filepath);
 
-        // realiza a chamada de um metodo do ws passando os paramentros    
-        $client = new nusoap_client($wsProduto);
-        $client->useHTTPPersistentConnection();
-        $result = $client->call("listar", $params);
-        $res = XML2Array::createArray($result);
+            if (!in_array($extensao, $extensions_enable))
+              continue;
 
-        // grava log
-        $log->addLog(ACAO_RETORNO, "dadosProduto", $result);
+            /* verifica se a miniatura a existe */
+            $fileOk = explode('_min.' . $extensao, $file);
+            if (key_exists("1", $fileOk))
+              continue;
 
-        if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])) {
-          $prd = $res['resultado']['dados']['produto'];
+            //define o nome da miniatura da imagem
+            $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
 
-          $produto["codigo"] = $prd['codigo_produto'];
-          $produto["descricao"] = $prd['nome_produto'] . " " . $prd['nome_unidade'];
-          $produto["unidade"] = $prd['nome_unidade'];
-          $produto["multiplicador"] = $prd['multiplicador'];
+            //gera a miniatura
+            $image = WideImage::load($dir_full . $file);
+            $resized = $image->resize(300, 250);
+            $resized->saveToFile($dir_full . $file_min, 80);
 
-          /* define o caminho completo do diteretorio de imagens do produto buscado */
-          $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
-          $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
-
-          /* verifica se o diretorio existe */
-          if (file_exists($dir_full)) {
-            /* se o diretorio existir, percorre o diretorio buscando as imagens */
-            $handle = opendir($dir_full);
-            while (false !== ($file = readdir($handle))) {
-              if (in_array($file, array(".", "..")))
-                continue;
-
-              //obtem a extensao do anexo
-              $filepath = explode(".", $file);
-              $extensao = end($filepath);
-
-              if (!in_array($extensao, $extensions_enable))
-                continue;
-
-              /* verifica se a miniatura a existe */
-              $fileOk = explode('_min.' . $extensao, $file);
-              if (key_exists("1", $fileOk))
-                continue;
-
-              //define o nome da miniatura da imagem
-              $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
-
-              //gera a miniatura
-              $image = WideImage::load($dir_full . $file);
-              $resized = $image->resize(300, 250);
-              $resized->saveToFile($dir_full . $file_min, 80);
-
-              array_push($produto["img"], array(
-                  'arquivo' => $url_full . $file
-              ));
-            }
+            array_push($produto["img"], array(
+                'arquivo' => $url_full . $file
+            ));
           }
         }
       }
@@ -419,71 +367,44 @@ else if (empty($lista['nome_cliente'])) {
 
           foreach ($list['lista_produtos']['produto'] as &$produto) {
 
-            // busca os dados do fornecedor
-            $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['codigo_produto']);
+            $produto["codigo"] = $produto['codigo_produto'];
+            $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
 
-            // grava log
-            $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
+            /* define o caminho completo do diteretorio de imagens do produto buscado */
+            $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
+            $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
 
-            // monta os parametros a serem enviados
-            $params = array(
-                'crypt' => $serail_number_cliente,
-                'dados' => $dados
-            );
+            /* verifica se o diretorio existe */
+            if (file_exists($dir_full)) {
+              /* se o diretorio existir, percorre o diretorio buscando as imagens */
+              $handle = opendir($dir_full);
+              while (false !== ($file = readdir($handle))) {
+                if (in_array($file, array(".", "..")))
+                  continue;
 
-            // realiza a chamada de um metodo do ws passando os paramentros    
-            $client = new nusoap_client($wsProduto);
-            $client->useHTTPPersistentConnection();
-            $result = $client->call("listar", $params);
-            $res = XML2Array::createArray($result);
+                //obtem a extensao do anexo
+                $filepath = explode(".", $file);
+                $extensao = end($filepath);
 
-            // grava log
-            $log->addLog(ACAO_RETORNO, "dadosProduto", $result);
+                if (!in_array($extensao, $extensions_enable))
+                  continue;
 
-            if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['produto'])) {
-              $prd = $res['resultado']['dados']['produto'];
+                /* verifica se a miniatura a existe */
+                $fileOk = explode('_min.' . $extensao, $file);
+                if (key_exists("1", $fileOk))
+                  continue;
 
-              $produto["codigo"] = $prd['codigo_produto'];
-              $produto["descricao"] = $prd['nome_produto'] . " " . $prd['nome_unidade'];
-              $produto["unidade"] = $prd['nome_unidade'];
-              $produto["multiplicador"] = $prd['multiplicador'];
+                //define o nome da miniatura da imagem
+                $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
 
-              /* define o caminho completo do diteretorio de imagens do produto buscado */
-              $dir_full = sprintf("%s/%s/", $dir_imgs, $prd['codigo_produto']);
-              $url_full = sprintf("%s/%s/", $url_imgs, $prd['codigo_produto']);
+                //gera a miniatura
+                $image = WideImage::load($dir_full . $file);
+                $resized = $image->resize(300, 250);
+                $resized->saveToFile($dir_full . $file_min, 80);
 
-              /* verifica se o diretorio existe */
-              if (file_exists($dir_full)) {
-                /* se o diretorio existir, percorre o diretorio buscando as imagens */
-                $handle = opendir($dir_full);
-                while (false !== ($file = readdir($handle))) {
-                  if (in_array($file, array(".", "..")))
-                    continue;
-
-                  //obtem a extensao do anexo
-                  $filepath = explode(".", $file);
-                  $extensao = end($filepath);
-
-                  if (!in_array($extensao, $extensions_enable))
-                    continue;
-
-                  /* verifica se a miniatura a existe */
-                  $fileOk = explode('_min.' . $extensao, $file);
-                  if (key_exists("1", $fileOk))
-                    continue;
-
-                  //define o nome da miniatura da imagem
-                  $file_min = str_replace('.' . $extensao, '_min.' . $extensao, $file);
-
-                  //gera a miniatura
-                  $image = WideImage::load($dir_full . $file);
-                  $resized = $image->resize(300, 250);
-                  $resized->saveToFile($dir_full . $file_min, 80);
-
-                  array_push($produto["img"], array(
-                      'arquivo' => $url_full . $file
-                  ));
-                }
+                array_push($produto["img"], array(
+                    'arquivo' => $url_full . $file
+                ));
               }
             }
           }

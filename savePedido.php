@@ -57,21 +57,27 @@ $produtos = "";
 // concatena cada produto ao xml de produtos
 foreach ($prds as $produto) {
   $produtos .= sprintf("
-      <lista_produto>
-        <codigo_produto>%s</codigo_produto>
+      <produto>
+        <prdno>%s</prdno>
         <grade>%s</grade>
-        <quantidade_listada>%s</quantidade_listada>
-      </lista_produto>", $produto['produtoCodigo'], $produto['produtoGrade'], $produto['produtoQuantidade']);
+        <qtty>%d</qtty>
+      </produto>", $produto['produtoCodigo'], $produto['produtoGrade'], $produto['produtoQuantidade']);
 }
 
 // monta o xml de atualizacao de pedido
 $dados = sprintf("
   <dados>
-    <codigo_cliente>%s</codigo_cliente>
-    <tipo>%s</tipo>
-    <data_evento>%s</data_evento>
+    <codigo_loja>%d</codigo_loja>
+    <codigo_pdv>%d</codigo_pdv>
+    <codigo_pedido>%d</codigo_pedido>    
+    <data_pedido>%s</data_pedido>    
+    <codigo_funcionario>%d</codigo_funcionario>
+    <codigo_cliente>%d</codigo_cliente>    
+    <situacao>%d</situacao>    
+    <lista>%d</lista>
+    <tipo_lista>%d</tipo_lista>
     %s
-  </dados>", $pedido['clienteCodigo'], $pedido['tipoListaCodigo'], $pedido['dataEvento'], $produtos);
+  </dados>", 1, 1, 0, date("Ymd"), 1, $pedido['clienteCodigo'], 1, 1, $pedido['tipoListaCodigo'], $produtos);
 
 // grava log
 $log->addLog(ACAO_REQUISICAO, "atualizaPedidoPorCodigoInterno", $dados, SEPARADOR_INICIO);
