@@ -37,6 +37,8 @@ define('EORDSTATUS_TRANSITO',       7);
 define('EORDSTATUS_ENTREGAFUTURA',  8);
 define('EORDSTATUS_TODOS',          9);
 
+define('EORD_RELACIONADO_LISTA_DE_PRESENTE',  1);
+
 // Arquivo de relacionamento entre funcionario e usuario do SACI
 define('FILE_REL_FUNC_USER', 'config/relFuncUser.php');
 

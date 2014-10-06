@@ -19,8 +19,12 @@ $dados = $_REQUEST['dados'];
 $wscallback = $dados['wscallback'];
 $cliente = $dados['cliente'];
 
-if (!empty($cliente['nome_cliente'])){
-    $cliente['nome_cliente'] = sprintf("%%%s%%", $cliente['nome_cliente']);
+if (!empty($cliente['cliente'])) {
+  if($cliente['searchType'] == 1)
+    $dados = sprintf("<cliente><cpf_cgc>%s</cpf_cgc></cliente>", $cliente['cliente']);
+  
+  else
+    $dados = sprintf("<cliente><nome_cliente>%%%s%%</nome_cliente></cliente>", $cliente['cliente']);
 }
 
 /* variaveis de retorno do ws */
@@ -33,19 +37,6 @@ $client->useHTTPPersistentConnection();
 
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
-
-$dados = "<dados>";
-
-foreach ($cliente as $key => $value) {
-
-    if (!empty($value) || is_numeric($value)) {
-        $dados .= sprintf("\n<%s>%s</%s>", $key, $value, $key);
-    } else {
-        $dados .= sprintf("\n<%s/>", $key);
-    }
-}
-
-$dados .= "</dados>";
 
 // grava log
 $log->addLog(ACAO_REQUISICAO, "getCliente", $dados, SEPARADOR_INICIO);
@@ -70,37 +61,37 @@ $log->addLog(ACAO_RETORNO, "dadosCliente", $result);
 
 if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["cliente"])) {
 
-    $clientes = array();
+  $clientes = array();
 
-    if (key_exists("0", $res["resultado"]["dados"]["cliente"]))
-        $clientes = $res["resultado"]["dados"]["cliente"];
-    else
-        $clientes[] = $res["resultado"]["dados"]["cliente"];
+  if (key_exists("0", $res["resultado"]["dados"]["cliente"]))
+    $clientes = $res["resultado"]["dados"]["cliente"];
+  else
+    $clientes[] = $res["resultado"]["dados"]["cliente"];
 
-    $wsstatus = 1;
-    $wsresult = array();
+  $wsstatus = 1;
+  $wsresult = array();
 
-    usort($clientes, 'ordenarCliente');
+  usort($clientes, 'ordenarCliente');
 
-    foreach ($clientes as $cliente) {
-        /* dados do produto */
-        $wsresult[] = array(
-            "cliente_codigo" => $cliente["codigo_cliente"],
-            "cliente_nome" => $cliente["nome_cliente"],
-            "cliente_identidade" => $cliente["identidade"],
-            "cliente_cpf" => $cliente["cpf_cgc"],
-            "cliente_email" => $cliente["email"]
-        );
-    }
+  foreach ($clientes as $cliente) {
+    /* dados do produto */
+    $wsresult[] = array(
+        "cliente_codigo" => $cliente["codigo_cliente"],
+        "cliente_nome" => $cliente["nome_cliente"],
+        "cliente_identidade" => $cliente["identidade"],
+        "cliente_cpf" => $cliente["cpf_cgc"],
+        "cliente_email" => $cliente["email"]
+    );
+  }
 } else {
-    /* monta o xml de retorno */
-    $wsstatus = 0;
-    $wsresult["wserror"] = "Nenhum cliente encontrado!";
+  /* monta o xml de retorno */
+  $wsstatus = 0;
+  $wsresult["wserror"] = "Nenhum cliente encontrado!";
 
-    // grava log
-    $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
+  // grava log
+  $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
 
-    returnWS($wscallback, $wsstatus, $wsresult);
+  returnWS($wscallback, $wsstatus, $wsresult);
 }
 
 // grava log

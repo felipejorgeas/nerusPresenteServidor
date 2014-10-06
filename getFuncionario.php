@@ -76,16 +76,13 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['funcionari
     case EMPTYPE_VENDEDOR:
       $permissao = 1;
       break;
-    case EMPTYPE_GERENTE:
-      $permissao = 2;
-      break;
-    case EMPTYPE_DIRETOR:
+    case EMPTYPE_GERENTE: case EMPTYPE_DIRETOR:
       $permissao = 2;
       break;
     default:
       $permissao = 0;
   }
-
+  
   if($permissao > 0){
     $wsstatus = 1;
     $wsresult = array(
@@ -94,6 +91,7 @@ if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['funcionari
         'email' => $funcionario['email'],
         'loja' => $funcionario['codigo_loja'],
         'usuario' => $codigo_usuario,
+        'cargo' => $funcionario['codigo_cargo'],
         'permissao' => $permissao
     );
   }

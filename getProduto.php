@@ -42,26 +42,9 @@ $client->useHTTPPersistentConnection();
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
 
-/* serach_type
- * 0 => numero
- * 1 => texto
-*/
-if($produto['searchType'] == 1){
-  $produto['centro_lucro'] = explode(",", $produto['centro_lucro']);
-  $dados = sprintf("<dados>"
-        . "\n\t<nome_produto>%%%s%%</nome_produto>"
-        . "\n\t<codigo_fabricante>%s</codigo_fabricante>"
-        . "\n\t<tipo_produto>%s</tipo_produto>"
-        . "\n\t<loadstk>0</loadstk>\n</dados>", 
-        strtoupper($produto['produto']), $produto['codigo_fabricante'], 
-        $produto['tipo_produto']);  
-}
+$produto['centro_lucro'] = explode(",", $produto['centro_lucro']);
 
-else{
-  $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['produto']);
-}
-
-if($produto['searchType'] && count($produto['centro_lucro']) > 0){
+if($produto['searchType'] == 1 && count($produto['centro_lucro']) > 0){
   
   $wsstatus = 2;
   $wsresult = array();
@@ -137,6 +120,7 @@ if($produto['searchType'] && count($produto['centro_lucro']) > 0){
             $resized->saveToFile($dir_full . $file_min, 80);
 
             $img = $url_full . $file;
+            break;
           }
         }
 
@@ -153,6 +137,23 @@ if($produto['searchType'] && count($produto['centro_lucro']) > 0){
 
 else{
 
+  /* serach_type
+   * 0 => numero
+   * 1 => texto
+  */
+  if($produto['searchType'] == 1){    
+    $dados = sprintf("<dados>"
+          . "\n\t<nome_produto>%%%s%%</nome_produto>"
+          . "\n\t<codigo_fabricante>%s</codigo_fabricante>"
+          . "\n\t<tipo_produto>%s</tipo_produto>"
+          . "\n\t<loadstk>0</loadstk>\n</dados>", 
+          strtoupper($produto['produto']), $produto['codigo_fabricante'], 
+          $produto['tipo_produto']);  
+  }
+
+  else
+    $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['produto']);
+  
   // grava log
   $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
 
@@ -223,6 +224,7 @@ else{
             $resized->saveToFile($dir_full . $file_min, 80);
 
             $img = $url_full . $file;
+            break;
           }
         }
 
