@@ -147,6 +147,17 @@ if ($lista['listaDefault'] == 1) {
         "produtos" => $prds
     );
   }
+  
+  else{
+    /* monta o xml de retorno */
+    $wsstatus = 0;
+    $wsresult["wserror"] = "Nenhuma lista encontrada!";
+
+    // grava log
+    $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
+
+    returnWS($wscallback, $wsstatus, $wsresult);
+  }
 }
 
 // busca pelo codigo do cliente
