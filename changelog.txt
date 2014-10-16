@@ -1,10 +1,10 @@
-## SACI Presente - servidor
+## Nérus Presente - servidor
 #
-# Aplicativo auxiliar na criação de lista de presentes e orçamentos no ERP SACI.
+# Aplicação auxiliar na criação de listas de presentes e orçamentos no Nérus ERP.
 #
-## Autor: Felipe Jorge - EAC Software
+## Desenvolvedor: Felipe Jorge - EAC Software
 
 
-# v0.1 - 12/08/2014
+# v1.0 - 14/10/2014
 
-- Versão inicial do aplicativo.
+- Versão inicial da aplicação.

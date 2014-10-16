@@ -47,7 +47,6 @@ $params = array(
     'dados' => $dados
 );
 
-
 // realiza a chamada de um metodo do ws passando os paramentros
 $result = $client->call("listar", $params);
 

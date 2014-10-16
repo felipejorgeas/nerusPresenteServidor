@@ -45,9 +45,6 @@ else if(isset($_POST['confirm']) && (!empty($_POST['usuario']) && !empty($_POST[
     $funcionario = $res['resultado']['dados']['funcionario'];
 
     // verifica o nivel de permissao do usuario
-    // 0 - usuario sem permissao para usar o app
-    // 1 - usuario com permissao para usar o app
-    // 2 - usuario com permissao para usar o app e alterar configuracoes
     switch($funcionario['codigo_cargo']){
       case EMPTYPE_GERENTE:
         $permissao = true;
@@ -85,12 +82,11 @@ else if(isset($_POST['confirm']) && (!empty($_POST['usuario']) && !empty($_POST[
 if($telaLogin){
 
 ?>
-
     <!DOCTYPE html>
     <html>
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>saciOrçamento</title>
+        <title>Nérus Presente</title>
       </head>
       </head>
       <body>
@@ -110,12 +106,11 @@ if($telaLogin){
 else if($telaRelacionamento){
 
 ?>
-
     <!DOCTYPE html>
     <html>
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>saciOrçamento</title>
+        <title>Nérus Presente</title>
       </head>
       </head>
       <body>

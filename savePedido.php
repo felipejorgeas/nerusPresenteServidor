@@ -26,7 +26,7 @@ $wscallback = $dados['wscallback'];
 $file = $dados["file"];
 
 $content = file_get_contents($dir_tmp . $file);
-//unlink($dir_tmp . $file);
+unlink($dir_tmp . $file);
 
 $pedido = (array) json_decode($content);
 $produtos = $pedido['produtos'];
@@ -266,7 +266,7 @@ $log->addLog(ACAO_RETORNO, "dadosPedido", $result);
 
 if (isset($res['resultado']['dados']['pedido'])) {
   $wsstatus = 1;
-  $wsresult = array();
+  $wsresult = $res['resultado']['dados']['pedido'];
 }
 
 // grava log

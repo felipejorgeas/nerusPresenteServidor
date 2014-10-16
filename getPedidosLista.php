@@ -12,7 +12,9 @@ $log = new Log();
 
 /* obtendo algumas configuracoes do sistema */
 $conf = getConfig();
-$ws = sprintf("%s/listaws.php", $conf["SISTEMA"]["saciWS"]);
+$wsPedidosLista = sprintf("%s/listaws.php", $conf["SISTEMA"]["saciWS"]);
+$wsPedido = sprintf("%s/pedidows.php", $conf["SISTEMA"]["saciWS"]);
+$wsCliente = sprintf("%s/clientews.php", $conf["SISTEMA"]["saciWS"]);
  
 /* loja padrao */
 //$loja = $conf["MISC"]["loja"];
@@ -29,7 +31,7 @@ $wsstatus = 0;
 $wsresult = array();
 
 // url de ws
-$client = new nusoap_client($ws);
+$client = new nusoap_client($wsPedidosLista);
 $client->useHTTPPersistentConnection();
 
 // serial do cliente
@@ -72,14 +74,80 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["produto"])
     
     $existsOk = false;
     foreach($pedidos as $pedido){
-      if($pedido["codigo_pedido"] == $produto["codigo_pedido"])
+      if($pedido["pedido_codigo"] == $produto["codigo_pedido"])
         $existsOk = true;
     }
     
     if(!$existsOk){
-      $pedidos[] = array(
-        "codigo_pedido" => $produto["codigo_pedido"]
+
+      // obtem todos os dados do pedido
+      $dados = sprintf("<dados>\n\t<codigo_pedido>%s</codigo_pedido>\n</dados>", $produto["codigo_pedido"]);
+
+      // grava log
+      $log->addLog(ACAO_REQUISICAO, "getPedido", $dados, SEPARADOR_INICIO);
+
+      // monta os parametros a serem enviados
+      $params = array(
+          'crypt' => $serail_number_cliente,
+          'dados' => $dados
       );
+      
+      // url de ws
+      $client = new nusoap_client($wsPedido);
+      $client->useHTTPPersistentConnection();
+
+      // realiza a chamada de um metodo do ws passando os paramentros
+      $result = $client->call('listar', $params);
+      $res = XML2Array::createArray($result);
+
+      // grava log
+      $log->addLog(ACAO_RETORNO, "dadosPedido", $result);
+      
+      if (isset($res['resultado']['dados']['pedido'])) {
+
+        $pedido = $res['resultado']['dados']['pedido'];
+        
+        // obtem os dados do cliente
+        $dados = sprintf("<cliente><codigo_cliente>%s</codigo_cliente></cliente>", $pedido['codigo_cliente']);
+        
+        // url de ws
+        $client = new nusoap_client($wsCliente);
+        $client->useHTTPPersistentConnection();
+
+        // serial do cliente
+        $serail_number_cliente = readSerialNumber();
+
+        // grava log
+        $log->addLog(ACAO_REQUISICAO, "getCliente", $dados, SEPARADOR_INICIO);
+
+        // monta os parametros a serem enviados
+        $params = array(
+            'crypt' => $serail_number_cliente,
+            'dados' => $dados
+        );
+
+        // realiza a chamada de um metodo do ws passando os paramentros
+        $result = $client->call("listar", $params);
+
+        // remove acentos dos dados
+        $result = removerAcentos($result);
+
+        $res = XML2Array::createArray($result);
+
+        // grava log
+        $log->addLog(ACAO_RETORNO, "dadosCliente", $result);
+
+        if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["cliente"])) {
+
+          $cliente = $res["resultado"]["dados"]["cliente"];
+        
+          $pedidos[] = array(
+            "pedido_codigo" => $pedido["codigo_pedido"],
+            "cliente_codigo" => $cliente["codigo_cliente"],
+            "cliente_nome" => $cliente["nome_cliente"]
+          );
+        }
+      }
     }
   }
   

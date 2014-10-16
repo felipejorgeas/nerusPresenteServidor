@@ -256,8 +256,8 @@ function createDdp($file_in, $file_out, $key = "Q'mHp7|&# @~oM.?={+f:)g`lr(&6@!a
  */
 function readCrpt($line, $file1 = "", $file2 = "") {
   $conf = getConfig();
-  $cr = sprintf("%s/crypt.dat", $conf['SISTEMA']['diretorio_crypts']);
-  $kcr = sprintf("%s/kcrypt.dat", $conf['SISTEMA']['diretorio_crypts']);
+  $cr = sprintf("%s/crypt.dat", $conf['SISTEMA']['dirCrypt']);
+  $kcr = sprintf("%s/kcrypt.dat", $conf['SISTEMA']['dirCrypt']);
 
   /* se o arquivo 1 nao for escolhido, busca o padrao */
   if ($file1 == "") {

@@ -14,6 +14,7 @@ $log = new Log();
 /* obtendo algumas configuracoes do sistema */
 $conf = getConfig();
 $wsProduto = sprintf("%s/produtows.php", $conf['SISTEMA']['saciWS']);
+$wsCodigoBarra = sprintf("%s/codigoBarraws.php", $conf['SISTEMA']['saciWS']);
 $wsFabricante = sprintf("%s/fabricantews.php", $conf['SISTEMA']['saciWS']);
 $wsCentroLucro = sprintf("%s/categoriaws.php", $conf['SISTEMA']['saciWS']);
 
@@ -34,10 +35,6 @@ $produto = $dados['produto'];
 /* variaveis de retorno do ws */
 $wsstatus = 0;
 $wsresult = array();
-
-// url de ws
-$client = new nusoap_client($wsProduto);
-$client->useHTTPPersistentConnection();
 
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
@@ -68,6 +65,10 @@ if($produto['searchType'] == 1 && count($produto['centro_lucro']) > 0){
         'dados' => $dados
     );
 
+    // url de ws
+    $client = new nusoap_client($wsProduto);
+    $client->useHTTPPersistentConnection();
+    
     // realiza a chamada de um metodo do ws passando os paramentros
     $result = $client->call("listar", $params);
     $res = XML2Array::createArray($result);
@@ -141,7 +142,7 @@ else{
    * 0 => numero
    * 1 => texto
   */
-  if($produto['searchType'] == 1){    
+  if($produto['searchType'] == 1){
     $dados = sprintf("<dados>"
           . "\n\t<nome_produto>%%%s%%</nome_produto>"
           . "\n\t<codigo_fabricante>%s</codigo_fabricante>"
@@ -151,8 +152,34 @@ else{
           $produto['tipo_produto']);  
   }
 
-  else
+  else{
+    
+    // busca os dados pelo codigo de barras, se for o caso
+    $dados = sprintf("<dados>\n\t<tipo_codigo>1</tipo_codigo>\n<barcode>%s</barcode>\n</dados>", $produto['produto']);
+
+    // grava log
+    $log->addLog(ACAO_REQUISICAO, "getCodigoBarras", $dados, SEPARADOR_INICIO);
+
+    // monta os parametros a serem enviados
+    $params = array(
+        'crypt' => $serail_number_cliente,
+        'dados' => $dados
+    );
+
+    // realiza a chamada de um metodo do ws passando os paramentros    
+    $client = new nusoap_client($wsCodigoBarra);
+    $client->useHTTPPersistentConnection();
+    $result = $client->call("listar", $params);
+    $res = XML2Array::createArray($result);
+
+    // grava log
+    $log->addLog(ACAO_RETORNO, "dadosCodigoBarra", $result);
+
+    if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['resposta']))
+      $produto["produto"] = $res['resultado']['dados']['resposta']["codigo_produto"];
+      
     $dados = sprintf("<dados>\n\t<codigo_produto>%s</codigo_produto>\n</dados>", $produto['produto']);
+  }
   
   // grava log
   $log->addLog(ACAO_REQUISICAO, "getProduto", $dados, SEPARADOR_INICIO);
@@ -163,6 +190,10 @@ else{
       'dados' => $dados
   );
 
+  // url de ws
+  $client = new nusoap_client($wsProduto);
+  $client->useHTTPPersistentConnection();
+  
   // realiza a chamada de um metodo do ws passando os paramentros
   $result = $client->call("listar", $params);
   $res = XML2Array::createArray($result);

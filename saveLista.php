@@ -250,7 +250,7 @@ $log->addLog(ACAO_RETORNO, "dadosLista", $result);
 
 if (isset($res['resultado']['dados']['lista'])) {
   $wsstatus = 1;
-  $wsresult = array();
+  $wsresult = $res['resultado']['dados']['lista'];
 }
 
 // grava log

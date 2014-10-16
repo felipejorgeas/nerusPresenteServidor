@@ -21,9 +21,11 @@ class Log {
     $this->dir_log = trim($this->conf["SISTEMA"]["dirLog"]);
     if(!empty($this->dir_log)){
       $this->useLog = true;
-      if(!file_exists($this->dir_log))
+      if(!file_exists($this->dir_log)){
         exec("mkdir " . $this->dir_log);
-      $this->filename = sprintf("%s/saciPresente_%s", $this->dir_log, date("Ymd"));
+        exec("chmod 777 " . $this->dir_log);
+      }
+      $this->filename = sprintf("%s/nerusPresente_%s", $this->dir_log, date("Ymd"));
     }
   }
 
@@ -42,7 +44,7 @@ class Log {
   function closeLog(){
     fclose($this->log);
     $this->log = null;
-    exec("chmod 777 " . $this->log);    
+    exec("chmod 777 " . $this->log);
   }
 
   function addLog($type, $method, $info, $sep=false){

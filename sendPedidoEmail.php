@@ -15,11 +15,9 @@ $log = new Log();
 
 /* obtendo algumas configuracoes do sistema */
 $conf = getConfig();
-$ws = sprintf("%s/pedidows.php", $conf['SISTEMA']['saciWS']);
-
-/* lista de lojas para produtos com e sem grades */
-$lojas_com_grade = $conf['MISC']['lojaComGrade'];
-$lojas_sem_grade = $conf['MISC']['lojaSemGrade'];
+$wsPedido = sprintf("%s/pedidows.php", $conf['SISTEMA']['saciWS']);
+$wsFuncionario = sprintf("%s/funcionariows.php", $conf['SISTEMA']['saciWS']);
+$wsCliente = sprintf("%s/clientews.php", $conf['SISTEMA']['saciWS']);
 
 /* caminhos completos para a localizacao e acesso as imagens dos produtos */
 $url_imgs = $conf['SISTEMA']['urlImgs'];
@@ -27,35 +25,39 @@ $dir_imgs = $conf['SISTEMA']['dirImgs'];
 
 /* obtendo os dados da empresa */
 $empresa_nome = $conf['EMPRESA']['nome'];
-$empresa_frase = $conf['EMPRESA']['frase'];
+$empresa_slogan = $conf['EMPRESA']['slogan'];
 $empresa_email = $conf['EMPRESA']['email'];
 $empresa_site = $conf['EMPRESA']['site'];
 $empresa_tel = $conf['EMPRESA']['tel'];
 
 /* dados do pdf a ser gerado */
-$pdf_dir = WService_DIR . "pdfs/";
-if(!file_exists($pdf_dir))
+$pdf_dir = WService_DIR . "pdf/";
+if(!file_exists($pdf_dir)){
   exec("mkdir " . $pdf_dir);
+  exec("chmod 777 " . $pdf_dir);
+}
 
 // status default 'Orcamento'
 $status = EORDSTATUS_ORCAMENTO;
 
 /* variaveis recebidas na requisicao
- * {Array}: dados(wscallback, orcamento(codigo, func_name, func_email))
+ * {Array}: dados(
+ *            wscallback, 
+ *            pedido(
+ *              codigo_pedido
+ *            )
+ *          )
  */
 $dados = $_REQUEST['dados'];
 $wscallback = $dados['wscallback'];
-$orcamento = $dados['orcamento'];
+$pedido = $dados['pedido'];
 
 /* variaveis de retorno do ws */
 $wsstatus = 0;
 $wsresult = array();
 
-//define o nome do pdf a ser gerado
-$pdf_name = sprintf("orcamento_%s.pdf", $orcamento['codigo']);
-
 // url de ws
-$client = new nusoap_client($ws);
+$client = new nusoap_client($wsPedido);
 $client->useHTTPPersistentConnection();
 
 // serial do cliente
@@ -65,7 +67,7 @@ $dados = sprintf("
   <dados>
     <codigo_pedido>%s</codigo_pedido>
   </dados>",
-  $orcamento['codigo']);
+  $pedido['codigo_pedido']);
 
 // grava log
 $log->addLog(ACAO_REQUISICAO, "getPedido", $dados, SEPARADOR_INICIO);
@@ -85,8 +87,24 @@ $log->addLog(ACAO_RETORNO, "dadosPedido", $result);
 
 $prds = array();
 if (isset($res['resultado']['dados']['pedido'])) {
+  
+  $obj_pedido = $res['resultado']['dados']['pedido'];
+  
+  // obtem os dados do retorno
+  $ordno = $obj_pedido['codigo_pedido'];
+  $data = $obj_pedido['data_pedido'];
+  $cliente = $obj_pedido['codigo_cliente'];
+  $funcionario = $obj_pedido['codigo_funcionario'];
+  $status = $obj_pedido['situacao'];
+  $storeno = $obj_pedido['codigo_loja'];
+  $pdvno = $obj_pedido['codigo_pdv'];
 
-  if ($res['resultado']['dados']['pedido']['situacao'] != $status) {
+  $data = sprintf("%s/%s/%s", substr($data, 6, 2), substr($data, 4, 2), substr($data, 0, 4));
+  
+  //define o nome do pdf a ser gerado
+  $pdf_name = sprintf("pedido_%d_%d.pdf", $ordno, $storeno);
+
+  if ($obj_pedido['situacao'] != $status) {
     /* monta o xml de retorno */
     $wsstatus = 0;
     $wsresult['wserror'] = "O pedido informado n&atilde;o &eacute; um or&ccedil;amento!";
@@ -97,36 +115,17 @@ if (isset($res['resultado']['dados']['pedido'])) {
     returnWS($wscallback, $wsstatus, $wsresult);
   }
 
-  // obtem os dados do orcamento a ser atualizado
-  $data = $res['resultado']['dados']['pedido']['data_pedido'];
-  $cliente = $res['resultado']['dados']['pedido']['codigo_cliente'];
-  $funcionario = $res['resultado']['dados']['pedido']['codigo_funcionario'];
-  $storeno = $res['resultado']['dados']['pedido']['codigo_loja'];
-  $pdvno = $res['resultado']['dados']['pedido']['codigo_pdv'];
-  $valor_desconto = $res['resultado']['dados']['pedido']['valor_desconto'];
-  $valor_total += $res['resultado']['dados']['pedido']['valor_total'];
-  $transportadora = $res['resultado']['dados']['pedido']['codigo_transportadora'];
-  $status = $res['resultado']['dados']['pedido']['situacao'];
-  $valor_frete = $res['resultado']['dados']['pedido']['valor_frete'];
-  $bloqueado_sep = $res['resultado']['dados']['pedido']['bloqueado_separacao'];
-  $tipo_frete = $res['resultado']['dados']['pedido']['tipo_frete'];
-  $endereco_entrega = $res['resultado']['dados']['pedido']['codigo_endereco_entrega'];
-  $observacao = $res['resultado']['dados']['pedido']['observacao'];
-  $observacao = empty($observacao) ? "" : trim(removerAcentos(utf8_decode($observacao)));
-
-  $data = sprintf("%s/%s/%s", substr($data, 6, 2), substr($data, 4, 2), substr($data, 0, 4));
-
   // obtem todos os produtos ja existentes no orcamento
-  if (key_exists('0', $res['resultado']['dados']['pedido']['lista_produtos']['produto']))
-    $prds = $res['resultado']['dados']['pedido']['lista_produtos']['produto'];
+  if (key_exists('0', $obj_pedido['lista_produtos']['produto']))
+    $prds = $obj_pedido['lista_produtos']['produto'];
   else
-    $prds[] = $res['resultado']['dados']['pedido']['lista_produtos']['produto'];
+    $prds[] = $obj_pedido['lista_produtos']['produto'];
 }
 
 else {
   /* monta o xml de retorno */
   $wsstatus = 0;
-  $wsresult['wserror'] = "Or&ccedil;amento n&atilde;o encontrado!";
+  $wsresult['wserror'] = "Pedido n&atilde;o encontrado!";
 
   // grava log
   $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
@@ -134,8 +133,9 @@ else {
   returnWS($wscallback, $wsstatus, $wsresult);
 }
 
-$ws_func = sprintf("%s/funcionariows.php", $conf['SISTEMA']['saciWS']);
-$client_func = new nusoap_client($ws_func);
+// obtem os dados do funcionario
+$client = new nusoap_client($wsFuncionario);
+$client->useHTTPPersistentConnection();
 
 $dados = sprintf("
   <dados>
@@ -143,21 +143,58 @@ $dados = sprintf("
   </dados>",
   $funcionario);
 
+// grava log
+$log->addLog(ACAO_REQUISICAO, "getFuncionario", $dados, SEPARADOR_INICIO);
+
 // monta os parametros a serem enviados
-$params_func = array(
+$params = array(
     'crypt' => $serail_number_cliente,
     'dados' => $dados
 );
 
 // realiza a chamada de um metodo do ws passando os paramentros
-$result_func = $client_func->call('listar', $params_func);
-$res_func = XML2Array::createArray($result_func);
+$result = $client->call('listar', $params);
+$res = XML2Array::createArray($result);
 
-$funcionario = "";
-if ($res_func['resultado']['sucesso'] && isset($res_func['resultado']['dados']['funcionario'])) {
-  $funcionario = $res_func['resultado']['dados']['funcionario'];
-  $func_name_create = $funcionario['nome_funcionario'];
-  $func_email_create = $funcionario['email'];
+// grava log
+$log->addLog(ACAO_RETORNO, "dadosFuncionario", $result);
+
+if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['funcionario'])) {
+  $funcionario = $res['resultado']['dados']['funcionario'];
+  $func_name = $funcionario['nome_funcionario'];
+  $func_email = $funcionario['email'];
+}
+
+// obtem os dados do cliente
+$client = new nusoap_client($wsCliente);
+$client->useHTTPPersistentConnection();
+
+$dados = sprintf("
+  <dados>
+    <codigo_cliente>%d</codigo_cliente>
+  </dados>",
+  $cliente);
+
+// grava log
+$log->addLog(ACAO_REQUISICAO, "getCliente", $dados, SEPARADOR_INICIO);
+
+// monta os parametros a serem enviados
+$params = array(
+    'crypt' => $serail_number_cliente,
+    'dados' => $dados
+);
+
+// realiza a chamada de um metodo do ws passando os paramentros
+$result = $client->call('listar', $params);
+$res = XML2Array::createArray($result);
+
+// grava log
+$log->addLog(ACAO_RETORNO, "dadosCliente", $result);
+
+if ($res['resultado']['sucesso'] && isset($res['resultado']['dados']['cliente'])) {
+  $cliente = $res['resultado']['dados']['cliente'];
+  $cliente_name = $cliente['nome_cliente'];
+  $cliente_email = $cliente['email'];
 }
 
 $content = '<style type="text/css">
@@ -182,11 +219,11 @@ $content = '<style type="text/css">
         <table class="page_header">
             <tr>
                 <td style="width: 50%; text-align: left">
-                    <img src="img/logo_cliente.png" alt="BelLar" style="width: 150px">
+                    <img src="img/logo_cliente.png" style="width: 150px">
                 </td>
                 <td style="width: 50%; text-align: right">
                     ' . $data . '
-                    <br/><br/><span style="font-size: 20px;">Memorial Descritivo #' . $orcamento['codigo'] . '</span>
+                    <br/><br/><span style="font-size: 20px;">Pedido #' . $ordno . ' - Loja #' . $storeno .'</span>
                 </td>
             </tr>
         </table>
@@ -196,14 +233,14 @@ $content = '<style type="text/css">
             <tr>
                 <td style="width: 33%; text-align: left;">
                     <strong>' . $empresa_nome . '</strong>
-                    <br/>' . $empresa_frase . '
+                    <br/>' . $empresa_slogan . '
                 </td>
                 <td style="width: 34%; text-align: center">
                     ' . $empresa_site . '
                     <br/>' . $empresa_tel . '
                 </td>
                 <td style="width: 33%; text-align: right">
-                    <span style="margin-top: -10px; font-size: 10px;">SACI - EAC Software</span>
+                    <span style="margin-top: -10px; font-size: 10px;">NÉRUS - EAC Software</span>
                     <br/>[[page_cu]]/[[page_nb]]
                 </td>
             </tr>
@@ -218,24 +255,14 @@ $content .= '
           <td style="width: 50%"><strong>Cliente:</strong></td>
         </tr>
         <tr>
-          <td style="width: 50%">' . $func_name_create . '<br/>' . $func_email_create . '</td>
-          <td style="width: 50%">' . $observacao . '</td>
+          <td style="width: 50%">' . $func_name . '<br/>' . $func_email . '</td>
+          <td style="width: 50%">' . $cliente_name . '</td>
         </tr>
       </table>
       <div class="produtos">';
 
-// ordenando o array por ambiente
-function cmp($a, $b) {
-  if ($a['ambiente'] == $b['ambiente'])
-    return 0;
-  return ($a['ambiente'] < $b['ambiente']) ? -1 : 1;
-}
-usort($prds, "cmp");
-
 $page = 1;
 $i = 0;
-
-$ambiente_anterior = "";
 
 foreach ($prds as $produto) {
   if(!$produto['codigo_produto'] > 0)
@@ -292,45 +319,16 @@ foreach ($prds as $produto) {
     }
   }
 
-  $ws_amb = sprintf("%s/ambientews.php", $conf['SISTEMA']['saciWS']);
-  $client_amb = new nusoap_client($ws_amb);
-
-  $dados = sprintf("
-    <dados>
-      <codigo_ambiente>%d</codigo_ambiente>
-    </dados>",
-    $produto['ambiente']);
-
-  // monta os parametros a serem enviados
-  $params_amb = array(
-      'crypt' => $serail_number_cliente,
-      'dados' => $dados
-  );
-
-  // realiza a chamada de um metodo do ws passando os paramentros
-  $result_amb = $client_amb->call('listar', $params_amb);
-  $res_amb = XML2Array::createArray($result_amb);
-
-  $ambiente = "";
-  if ($res_amb['resultado']['sucesso'] && isset($res_amb['resultado']['dados']['ambiente'])) {
-    $ambiente = $res_amb['resultado']['dados']['ambiente']['nome_ambiente'];
-  }
-
-  if ($produto['ambiente'] != $ambiente_anterior) {
-    $amb = $produto['ambiente'] > 0 ? $ambiente : 'SEM AMBIENTE';
-    $content .= sprintf('<div class="ambiente">Ambiente: #%d - %s</div>', $produto['ambiente'], $amb);
-    $ambiente_anterior = $produto['ambiente'];
-  }
-
   $content .= '<div class="produto">';
   $content .= sprintf('<img style="width: 230px; height: 150px;" src="%s" />', $miniatura);
   $content .= sprintf('<strong>%s</strong>', $produto['nome_produto']);
   $content .= '<table class="dados">';
   $content .= sprintf('<tr><td style="width: 70px;"><strong>Código:</strong></td><td><span>%s</span></td></tr>', $produto['codigo_produto']);
+  
   if (!empty($produto['grade_produto']))
     $content .= sprintf('<tr><td><strong>Grade:</strong></td><td><span>%s</span></td></tr>', $produto['grade_produto']);
+  
   $content .= sprintf('<tr><td><strong>Qtde.:</strong></td><td><span>%s</span></td></tr>', ($produto['quantidade'] / 1000));
-  $content .= sprintf('<tr><td><strong>Ambiente:</strong></td><td><span>%s</span></td></tr>', $amb);
   $content .= '</table>';
   $content .= '</div>';
 
@@ -356,17 +354,17 @@ $html2pdf->Output($pdf_dir . $pdf_name, 'F');
 $mail = new PHPMailer();
 $mail->IsSendmail();
 
-$mail->SetFrom($empresa_email, sprintf("%s - %s", $empresa_nome, $empresa_frase), 1);
-$mail->AddAddress($orcamento['func_email'], $orcamento['func_name']);
+$mail->SetFrom($empresa_email, sprintf("%s - %s", $empresa_nome, $empresa_slogan), 1);
+$mail->AddAddress($func_email, $func_name);
 
-$mail->Subject = sprintf("SACI Orçamento #%s - %s", $orcamento['codigo'], $observacao);
-$mail->MsgHTML("Segue orçamento em anexo.");
+$mail->Subject = sprintf("NÈRUS Presente - Pedido #%s Loja #%s - %s", $ordno, $storeno, $cliente_name);
+$mail->MsgHTML("Segue pedido em anexo.");
 $mail->AddAttachment($pdf_dir . $pdf_name);
 
 if (!$mail->Send()) {
   /* monta o xml de retorno */
   $wsstatus = 0;
-  $wsresult['wserror'] = "N&atilde;o foi poss&iacute;vel enviar o PDF do or&ccedil;amento por e-mail!<br/>O PDF foi salvo no servidor.";
+  $wsresult['wserror'] = "N&atilde;o foi poss&iacute;vel enviar o PDF do pedido por e-mail!<br/>O PDF '" . $pdf_name . "' foi salvo no servidor.";
 
   // grava log
   $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);

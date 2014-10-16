@@ -2,6 +2,7 @@
 ; Relacionamento entre funcionario e usuario do SACI
 
 [RELACAO_FUNC_USER]
-1 = 2
+1 = 1
 2 = 1
+6 = 1
 2152 = 1

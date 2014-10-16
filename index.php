@@ -5,11 +5,16 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>saciPresente</title>
+    <title>Nérus Presente</title>
   </head>
 
-  <body><h1>Seja bem vindo ao saciPresente - Servidor</h1>
-    <p>Sistema para auxiliar na inserção de orçamentos no SACI - v <a href="changelog.txt"><?=VERSAO?></a></p>
-    <p><a href="setRelFuncUser.php">Relação Funcionário x Usuário</a></p>
+  <body>
+    <h1>
+      Seja bem vindo ao Nérus Presente Servidor - <a href="changelog.txt">v<?=VERSAO?></a>
+    </h1>
+    <p>Aplicação auxiliar na criação de listas de presentes e orçamentos no Nérus ERP.</p>
+    <p>
+      <a href="setRelFuncUser.php">Relação Funcionário x Usuário</a>
+    </p>
   </body>
 </html>

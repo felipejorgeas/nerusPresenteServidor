@@ -74,8 +74,15 @@ if ($lista['listaDefault'] == 1) {
 
     $wsstatus = 1;
     $wsresult = array();
+    
+    $prds = array();
 
-    foreach ($lista['lista_produtos']['produto'] as &$produto) {
+    if (key_exists("0", $lista['lista_produtos']['produto']))
+      $prds = $lista['lista_produtos']['produto'];
+    else
+      $prds[] = $lista['lista_produtos']['produto'];
+
+    foreach ($prds as &$produto) {
 
       $produto["codigo"] = $produto['codigo_produto'];
       $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
@@ -137,7 +144,7 @@ if ($lista['listaDefault'] == 1) {
         "noivo_estado" => $lista['estado_noivo'],
         "observacoes" => $lista['observacoes'],
         "outras_observacoes" => $lista['outras_observacoes'],
-        "produtos" => $lista['lista_produtos']['produto']
+        "produtos" => $prds
     );
   }
 }
@@ -186,8 +193,15 @@ else if ($lista['searchType'] == 0) {
     usort($listas, 'ordenarLista');
 
     foreach ($listas as $lista) {
+      
+      $prds = array();
 
-      foreach ($lista['lista_produtos']['produto'] as &$produto) {
+      if (key_exists("0", $lista['lista_produtos']['produto']))
+        $prds = $lista['lista_produtos']['produto'];
+      else
+        $prds[] = $lista['lista_produtos']['produto'];
+
+      foreach ($prds as &$produto) {
 
         $produto["codigo"] = $produto['codigo_produto'];
         $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
@@ -249,7 +263,7 @@ else if ($lista['searchType'] == 0) {
           "noivo_estado" => $lista['estado_noivo'],
           "observacoes" => $lista['observacoes'],
           "outras_observacoes" => $lista['outras_observacoes'],
-          "produtos" => $lista['lista_produtos']['produto']
+          "produtos" => $prds
       );
     }
   }
@@ -359,7 +373,14 @@ else if (!empty($lista['cliente'])) {
 
         foreach ($listas as $list) {
 
-          foreach ($list['lista_produtos']['produto'] as &$produto) {
+          $prds = array();
+          
+          if (key_exists("0", $list['lista_produtos']['produto']))
+            $prds = $list['lista_produtos']['produto'];
+          else
+            $prds[] = $list['lista_produtos']['produto'];
+          
+          foreach ($prds as &$produto) {
 
             $produto["codigo"] = $produto['codigo_produto'];
             $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
@@ -421,7 +442,7 @@ else if (!empty($lista['cliente'])) {
               "noivo_estado" => $list['estado_noivo'],
               "observacoes" => $list['observacoes'],
               "outras_observacoes" => $list['outras_observacoes'],
-              "produtos" => $list['lista_produtos']['produto']
+              "produtos" => $prds
           );
         }
       }
@@ -492,7 +513,14 @@ else {
 
     foreach ($listas as $list) {
 
-      foreach ($list['lista_produtos']['produto'] as &$produto) {
+      $prds = array();
+      
+      if (key_exists("0", $list['lista_produtos']['produto']))
+        $prds = $list['lista_produtos']['produto'];
+      else
+        $prds[] = $list['lista_produtos']['produto'];
+
+      foreach ($prds as &$produto) {
 
         $produto["codigo"] = $produto['codigo_produto'];
         $produto["descricao"] = $produto['nome_real_produto'] . " " . $produto['unidade'];
@@ -554,7 +582,7 @@ else {
           "noivo_estado" => $list['estado_noivo'],
           "observacoes" => $list['observacoes'],
           "outras_observacoes" => $list['outras_observacoes'],
-          "produtos" => $list['lista_produtos']['produto']
+          "produtos" => $prds
       );
     }
   } else {
