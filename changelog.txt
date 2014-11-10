@@ -5,6 +5,11 @@
 ## Desenvolvedor: Felipe Jorge - EAC Software
 
 
+# v1.1 - 30/10/2014
+
+- Melhoria nas mensagens de retorno.
+
+
 # v1.0 - 14/10/2014
 
 - Versão inicial da aplicação.

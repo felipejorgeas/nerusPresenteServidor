@@ -81,7 +81,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["produto"])
     if(!$existsOk){
 
       // obtem todos os dados do pedido
-      $dados = sprintf("<dados>\n\t<codigo_pedido>%s</codigo_pedido>\n</dados>", $produto["codigo_pedido"]);
+      $dados = sprintf("<dados>\n\t<codigo_pedido>%s</codigo_pedido>\n<codigo_loja>%s</codigo_loja>\n</dados>", $produto["codigo_pedido"], $pedidosLista["codigo_loja"]);
 
       // grava log
       $log->addLog(ACAO_REQUISICAO, "getPedido", $dados, SEPARADOR_INICIO);

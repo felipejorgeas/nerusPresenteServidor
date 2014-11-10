@@ -377,7 +377,7 @@ else{
       if(!$estoqueOk){
         /* monta o xml de retorno */
         $wsstatus = 0;
-        $wsresult['wserror'] = "Produto sem estoque em nenhuma loja no momento!";
+        $wsresult['wserror'] = "Produto sem estoque cadastrado!";
         //$wsresult['wserror'] = "N&atilde;o h&atilde; estoque cadastrado para este produto!";
 
         // grava log
