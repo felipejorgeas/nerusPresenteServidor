@@ -595,16 +595,12 @@ function removerAcentos($txt) {
   return ($txt);
 }
 
-function ordenarCliente($a, $b) {
-  if ($a["nome_cliente"] == $b["nome_cliente"])
-    return 0;
-  return strcmp($a["nome_cliente"], $b["nome_cliente"]);
+function ordenarClientes($a, $b) {
+  return $a["cliente_nome"] > $b["cliente_nome"];
 }
 
-function ordenarLista($a, $b) {
-  if ($a["name_cliente"] == $b["name_cliente"])
-    return 0;
-  return strcmp($a["name_cliente"], $b["name_cliente"]);
+function ordenarFabricantes($a, $b) {
+  return $a["nome_fabricante"] > $b["nome_fabricante"];
 }
 
 ?>

@@ -68,10 +68,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["fabricante
   $wsstatus = 1;
   $wsresult = array();
 
-  foreach($fabricantes as $fabricante){
-    /* dados do tipo */
-    $wsresult[] = $fabricante;
-  }
+  $wsresult = $fabricantes;
 }
 
 else{
@@ -84,6 +81,8 @@ else{
 
   returnWS($wscallback, $wsstatus, $wsresult);
 }
+
+usort($wsresult, ordenarFabricantes);
 
 // grava log
 $log->addLog(ACAO_RETORNO, $wscallback, $wsresult, SEPARADOR_FIM);

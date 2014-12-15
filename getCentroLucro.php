@@ -14,8 +14,9 @@ $log = new Log();
 $conf = getConfig();
 $ws = sprintf("%s/categoriaws.php", $conf["SISTEMA"]["saciWS"]);
  
-/* loja padrao */
-//$loja = $conf["MISC"]["loja"];
+/* centros de lucro */
+$centro_lucro = explode(",", str_replace(" ", "", $conf["MISC"]["centrosLucro"]));
+$centro_lucro = array_filter($centro_lucro);
 
 /* variaveis recebidas na requisicao
  * {Array}: dados(wscallback, produto(codigo))
@@ -87,6 +88,31 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
     // ajusta o nome da categoria
     $nome_categoria = explode("/", $categoria["nome_categoria"]);
     
+//    $ok = true;
+//    
+//    // verifica nas configuracoes definidas se e para eniar este centro de lucro
+//    // para o aplicativo    
+//    if(is_array($centro_lucro) && count($centro_lucro) > 0){
+//      
+//      $item = $grupo . $departamento . $centroLucro;
+//
+//      if(!in_array($item, $centro_lucro)){
+//
+//        $item = $grupo . $departamento . "00";
+//
+//        if(!in_array($item, $centro_lucro)){
+//
+//          $item = $grupo . "0000";
+//
+//          if(!in_array($item, $centro_lucro))
+//            $ok = false;
+//        }
+//      }
+//    }
+//
+//    if(!$ok)
+//      continue;
+    
     // variaveis de controle
     $existsGrpOk = false;
     $existsDptOk = false;
@@ -124,7 +150,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
               $newCl = array(
                   "codigo" => $centroLucro, 
                   "nome" => $nome_categoria[2],
-                  "full" => $categoria["codigo_categoria"]
+                  "full" => $grupo . $departamento . $centroLucro
               );
 
               // adiciona o centro de lucro ao departamento
@@ -140,7 +166,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
           $newDpt = array(
             "codigo" => $departamento, 
             "nome" => $nome_categoria[1],
-            "full" => $categoria["codigo_categoria"],
+            "full" => $grupo . $departamento . "00",
             "centrolucros" => array()
           );
 
@@ -151,7 +177,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
             $newCl = array(
               "codigo" => $centroLucro, 
               "nome" => $nome_categoria[2],
-              "full" => $categoria["codigo_categoria"]
+              "full" => $grupo . $departamento . $centroLucro
             );
 
             // adiciona o centro de lucro ao departamento criado
@@ -174,7 +200,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
       $newGrp = array(
         "codigo" => $grupo, 
         "nome" => $nome_categoria[0],
-        "full" => $categoria["codigo_categoria"],
+        "full" => $grupo . "0000",
         "departamentos" => array()
       );
 
@@ -185,7 +211,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
         $newDpt = array(
           "codigo" => $departamento, 
           "nome" => $nome_categoria[1],
-          "full" => $categoria["codigo_categoria"],
+          "full" => $grupo . $departamento . "00",
           "centrolucros" => array()
         );
 
@@ -196,7 +222,7 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["categoria"
           $newCl = array(
             "codigo" => $centroLucro, 
             "nome" => $nome_categoria[2],
-            "full" => $categoria["codigo_categoria"]
+            "full" => $grupo . $departamento . $centroLucro
           );
 
           // adiciona o centro de lucro ao departamento criado

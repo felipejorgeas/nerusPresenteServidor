@@ -39,8 +39,10 @@ $wsresult = array();
 // serial do cliente
 $serail_number_cliente = readSerialNumber();
 
+$listaDefault = $lista['listaDefault'] == 1 ? true : false;
+
 // busca por listas default
-if ($lista['listaDefault'] == 1) {
+if ($listaDefault) {
   $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente><tipo>%s</tipo></lista>", $clienteListaDefault, $lista["tipo"]);
 
   // url de ws
@@ -130,6 +132,8 @@ if ($lista['listaDefault'] == 1) {
     $wsresult = array(
         "cliente_codigo" => $lista["codigo_cliente"],
         "cliente_nome" => $lista["name_cliente"],
+        "cliente_pai" => $lista["pai_cliente"],
+        "cliente_mae" => $lista["mae_cliente"],
         "tipo_codigo" => $lista["tipo"],
         "tipo_nome" => $lista["tipo_name"],
         "data_evento" => $lista["data_evento"],
@@ -260,6 +264,8 @@ else if ($lista['searchType'] == 0) {
       $wsresult[] = array(
           "cliente_codigo" => $lista["codigo_cliente"],
           "cliente_nome" => $lista["name_cliente"],
+          "cliente_pai" => $lista["pai_cliente"],
+          "cliente_mae" => $lista["mae_cliente"],
           "tipo_codigo" => $lista["tipo"],
           "tipo_nome" => $lista["tipo_name"],
           "data_evento" => $lista["data_evento"],
@@ -346,10 +352,20 @@ else if (!empty($lista['cliente'])) {
       $client = new nusoap_client($wsLista);
       $client->useHTTPPersistentConnection();
 
-      $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente>"
-              . "<tipo>%s</tipo>"
-              . "<data_evento>%s</data_evento></lista>", $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento']);
-
+      if(!empty($lista['data_evento'])){
+        $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente>"
+                . "<tipo>%s</tipo>"
+                . "<data_evento>%s</data_evento></lista>", 
+                $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento']);
+      }
+      
+      else{
+        $dados = sprintf("<lista><codigo_cliente>%s</codigo_cliente>"
+                . "<tipo>%s</tipo>"
+                . "<data_evento operador='>'>%s</data_evento></lista>", 
+                $cliente['codigo_cliente'], $lista['tipo'], $lista['data_inicio']);        
+      }
+      
 // grava log
       $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
 
@@ -439,6 +455,8 @@ else if (!empty($lista['cliente'])) {
           $wsresult[] = array(
               "cliente_codigo" => $list["codigo_cliente"],
               "cliente_nome" => $list["name_cliente"],
+              "cliente_pai" => $list["pai_cliente"],
+              "cliente_mae" => $list["mae_cliente"],
               "tipo_codigo" => $list["tipo"],
               "tipo_nome" => $list["tipo_name"],
               "data_evento" => $list["data_evento"],
@@ -476,16 +494,29 @@ else {
   $client = new nusoap_client($wsLista);
   $client->useHTTPPersistentConnection();
 
-  $dados = sprintf(""
+  if(!empty($lista['data_evento'])){
+    $dados = sprintf(""
+                . "<lista>"                
+                . "<tipo>%s</tipo>"
+                . "<data_evento>%s</data_evento>"
+                . "<pai_noivo>%%%s%%</pai_noivo>"
+                . "<mae_noivo>%%%s%%</mae_noivo>"
+                . "</lista>", 
+            $lista['tipo'], $lista['data_evento'], 
+            $lista['pai_noivo'], $lista['mae_noivo']);
+  }
+  
+  else{
+    $dados = sprintf(""
               . "<lista>"
-              . "<codigo_cliente>%s</codigo_cliente>"
               . "<tipo>%s</tipo>"
-              . "<data_evento>%s</data_evento>"
+              . "<data_evento operador='>'>%s</data_evento>"
               . "<pai_noivo>%%%s%%</pai_noivo>"
               . "<mae_noivo>%%%s%%</mae_noivo>"
               . "</lista>", 
-          $cliente['codigo_cliente'], $lista['tipo'], $lista['data_evento'], 
+          $lista['tipo'], $lista['data_inicio'], 
           $lista['pai_noivo'], $lista['mae_noivo']);
+  }
   
 // grava log
   $log->addLog(ACAO_REQUISICAO, "getLista", $dados, SEPARADOR_INICIO);
@@ -579,6 +610,8 @@ else {
       $wsresult[] = array(
           "cliente_codigo" => $list["codigo_cliente"],
           "cliente_nome" => $list["name_cliente"],
+          "cliente_pai" => $list["pai_cliente"],
+          "cliente_mae" => $list["mae_cliente"],
           "tipo_codigo" => $list["tipo"],
           "tipo_nome" => $list["tipo_name"],
           "data_evento" => $list["data_evento"],
@@ -607,6 +640,9 @@ else {
     returnWS($wscallback, $wsstatus, $wsresult);
   }
 }
+
+if (!$listaDefault) 
+  usort($wsresult, ordenarClientes);
 
 // grava log
 $log->addLog(ACAO_RETORNO, $wscallback, $wsresult, SEPARADOR_FIM);

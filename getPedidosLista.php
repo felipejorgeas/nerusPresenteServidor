@@ -70,6 +70,8 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["produto"])
   $wsstatus = 1;
   $wsresult = array();
 
+  $pedidos = array();
+  
   foreach($produtos as $produto){
     
     $existsOk = false;
@@ -81,7 +83,12 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["produto"])
     if(!$existsOk){
 
       // obtem todos os dados do pedido
-      $dados = sprintf("<dados>\n\t<codigo_pedido>%s</codigo_pedido>\n<codigo_loja>%s</codigo_loja>\n</dados>", $produto["codigo_pedido"], $pedidosLista["codigo_loja"]);
+      $dados = sprintf("<dados>
+              <codigo_pedido>%s</codigo_pedido>
+              <codigo_loja>%s</codigo_loja>
+              <situacao>%d</situacao>
+              </dados>", 
+              $produto["codigo_pedido"], $pedidosLista["codigo_loja"], EORDSTATUS_ORCAMENTO);
 
       // grava log
       $log->addLog(ACAO_REQUISICAO, "getPedido", $dados, SEPARADOR_INICIO);

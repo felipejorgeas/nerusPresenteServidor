@@ -93,6 +93,8 @@ if ($res["resultado"]["sucesso"] && isset($res["resultado"]["dados"]["cliente"])
   returnWS($wscallback, $wsstatus, $wsresult);
 }
 
+usort($wsresult, ordenarClientes);
+
 // grava log
 $log->addLog(ACAO_RETORNO, $wscallback, $wsresult, SEPARADOR_FIM);
 

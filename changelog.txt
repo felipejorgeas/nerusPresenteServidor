@@ -5,6 +5,17 @@
 ## Desenvolvedor: Felipe Jorge - EAC Software
 
 
+# v1.2 - 15/12/2014
+
+- Melhoria na ordenação do registros enviados ao aplicativo.
+
+- Melhoria na busca de listas de presentes a partir de uma data mínima.
+
+- Adicionado informações do nome do pai e da mãe do cliente nas listas de presentes enviadas ao aplicativo.
+
+- Correção para exibir apenas pedidos com a situação de orçamento quando utilizar a opção de atualizar um pedido.
+
+
 # v1.1 - 30/10/2014
 
 - Melhoria nas mensagens de retorno.
