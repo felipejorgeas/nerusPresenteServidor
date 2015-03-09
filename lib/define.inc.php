@@ -1,7 +1,7 @@
 <?php
 
 // versao do sistema
-define('VERSAO', '1.2');
+define('VERSAO', '1.3');
 
 // Cargo do Funcionario 'empfnc.type' ON (emp.funcao = empfnc.no)
 define('EMPTYPE_INDEFINIDO',  0);

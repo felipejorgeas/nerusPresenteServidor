@@ -496,7 +496,7 @@ else {
 
   if(!empty($lista['data_evento'])){
     $dados = sprintf(""
-                . "<lista>"                
+                . "<lista>"
                 . "<tipo>%s</tipo>"
                 . "<data_evento>%s</data_evento>"
                 . "<pai_noivo>%%%s%%</pai_noivo>"
