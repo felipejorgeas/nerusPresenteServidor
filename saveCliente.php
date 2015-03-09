@@ -20,6 +20,45 @@ $wscallback = $dados['wscallback'];
 $cliente = $dados['cliente'];
 
 
+$dadosCliente = sprintf("<cliente><cpf_cgc>%s</cpf_cgc></cliente>", $cliente['cliente_cpf']);
+
+// url de ws
+$clienteC = new nusoap_client($ws);
+$clienteC->useHTTPPersistentConnection();
+
+// serial do cliente
+$serial_number_cliente = readSerialNumber();
+
+// monta os parametros a serem enviados
+$paramsCliente = array(
+    'crypt' => $serial_number_cliente,
+    'dados' => $dadosCliente
+);
+
+// realiza a chamada de um metodo do ws passando os paramentros
+$resultado = $clienteC->call("listar", $paramsCliente);
+
+// remove acentos dos dados
+$resultado = removerAcentos($resultado);
+
+$resul = XML2Array::createArray($resultado);
+
+// grava log
+$log->addLog(ACAO_RETORNO, "dadosCliente", $resul);
+
+//verifica se encontrou cliente com CPF informado. Se existe, retorna informação.
+if ($resul["resultado"]["sucesso"] == true && isset($resul["resultado"]["dados"]["cliente"])) {
+  
+  $wsstatus = 0;
+  $wsresult["wserror"] = "J&aacute; existe cliente cadastrado para este CPF/CNPJ!";
+  
+  // grava log
+  $log->addLog(ACAO_RETORNO, "", $wsresult, SEPARADOR_FIM);
+
+  returnWS($wscallback, $wsstatus, $wsresult);
+  
+}
+
 /* variaveis de retorno do ws */
 $wsstatus = 0;
 $wsresult = array();
